@@ -1,7 +1,7 @@
 import os, time
 
-from SysEx import checksum
-from S3TurboPrinter import MessagePrinter, conv7_8
+from Util import checksum, conv7_8, noop
+from S3TurboPrinter import MessagePrinter
 
 S3Functions = {
     # FILE FUNCTIONS  FILE_F
@@ -99,7 +99,8 @@ class MSCEIMessage(object):
         subfunc = 0
         self.name = kwargs.get("fromName", None)
         if self.name:
-            func, subfunc = S3Functions.get(self.name, (0x0, 0x0))
+            func, subfunc = S3Functions.get(self.name, (None, None))
+            if not func: raise Exception("Unknown Command")
             
         self.magic    = kwargs.get("magic", 0xF0)
         self.vendor   = kwargs.get("vendor", 0x2F)
@@ -137,9 +138,14 @@ class SysExParser(object):
         self.debug     = debug
 
         self.handlers = {
-            "STAT_ANSWER": self.handleStatusAnswer,
             "F_DHDR":      self.handleFileDumpHeader,
             "F_DPKT":      self.handleFileDumpDataBlock,
+            "DIR_HDR":     self.handleFileDumpHeader,
+            "STAT_ANSWER": self.handleStatusAnswer,
+            "DATA_HEADER": self.handleDirectoryAnswer,
+            "DATA_DUMP"  : self.handleDataDump,
+            "DIR_ANSWER" : self.handleDirectoryAnswer,
+            "D_WAIT"     : noop,
         }
         self.currentHandler  = None
         self.currentDumpFile = None
@@ -200,6 +206,32 @@ class SysExParser(object):
             self.sendSysEx( MSCEIMessage(fromName="F_ACK"))
         else:
             self.sendSysEx( MSCEIMessage(fromName="F_NACK"))
+
+    def handleDataDump(self,msg):
+        self.sendSysEx( MSCEIMessage(fromName="D_WAIT"))
+        noctets = msg[5]
+        offset=6
+        data = []
+        for i in xrange(noctets):
+            data += conv7_8(msg[offset:offset+8])
+            offset += 8
+        cc = msg[offset]
+        cc_calc = checksum(msg[1:offset])
+        if cc == cc_calc:
+            self.dump(data)
+            self.sendSysEx( MSCEIMessage(fromName="D_ACK"))
+        else:
+            self.sendSysEx( MSCEIMessage(fromName="D_NACK"))
+
+    def handleDirectoryAnswer(self,msg):
+        self.sendSysEx( MSCEIMessage(fromName="D_WAIT"))
+        offset = 8 + 11 + 1 + 16 + 11
+        cc = msg[offset]
+        cc_calc = checksum(msg[1:offset])
+        if cc == cc_calc:
+            self.sendSysEx( MSCEIMessage(fromName="D_ACK"))
+        else:
+            self.sendSysEx( MSCEIMessage(fromName="D_NACK"))
         
     def parse(self, msg, timestamp=-1):
         if msg[0] == 0xF0:

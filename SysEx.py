@@ -1,9 +1,3 @@
-def checksum(data):
-    ret = 0
-    for d in data:
-        ret ^= d
-    return ret
-
 class HandshakeMessage(object):
     @staticmethod
     def EOF(target=0x0, packetnumber=0x0):
