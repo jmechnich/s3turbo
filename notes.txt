@@ -1,0 +1,66 @@
+# Trigger RAM dump
+
+./s3sysex.py --indev 3 --outdev 2 --command STAT_REQUEST --exit
+./s3sysex.py --indev 3 --outdev 2 --command F_ACK
+
+================================================================================
+
+# SysEx Bank/Perf change does not seem to work?
+
+./s3sysex.py --indev 3 --outdev 2 --debug --command BANK_PERF_CHG --exit 0x4 0x4
+
+================================================================================
+
+# File directory request
+
+./s3sysex.py --indev 3 --outdev 2 --command DIR_DRQ --checksum --exit 'str2file("*")' 'str2hex("A:\\")'
+
+# dirname: BANKS, SETUP, *
+
+# location: <80 chars, NUL terminated
+# A:\ 0x41 0x3a 0x5c 0x0 internal
+# B:\ 0x42 0x3a 0x5c 0x0 ramdisk 
+# C:\ 0x43 0x3a 0x5c 0x0 ramdisk 
+
+BANKS, DATA, PERF, PROGRAM, SAMPLES, SETUP, SOUNDS, banks filetype 32 (directory?)
+AnyColour   filetype 1 (sounds)
+Soloist     filetype 2 (performance?)
+Song        filetype 3
+GENERAL     filetype 5
+EFFECT1     filetype 6
+EFFECT2     filetype 7
+money   TXL filetype 8 (soundmap?)
+SOUNDMAP    filetype 9
+
+================================================================================
+
+# File dump request
+
+./s3sysex.py --indev 3 --outdev 2 --command F_DREQ --checksum --exit 
+
+================================================================================
+
+# Directory request
+
+./s3sysex.py --indev 3 --outdev 2 --command DIR_REQUEST --checksum 0x2 0x31 0x31 'str2file("*")' --debug --exit
+
+type 0,1 -> Program Changes + Tune Request (0xF6)
+type 2-5 -> SOUNDS, SAMPLES
+type 6   -> Song
+type 7   -> Perf
+type 8   -> BANKS, REALTIME_1
+
+gives two replies on D_WAIT/D_ACK, stops after F_WAIT/F_ACK, but no error
+
+================================================================================
+
+# Data request
+
+0x0 Sound dump
+0x1 Sample dump
+0x2 Soundmap dump
+0x3 Effect1 dump
+0x4 Effect2 dump
+0x5 General dump
+0x6 0x30-0x39 Song dump
+0x7 0x30-0x39 0x30-0x39 Perf dump
