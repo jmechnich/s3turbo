@@ -64,3 +64,13 @@ gives two replies on D_WAIT/D_ACK, stops after F_WAIT/F_ACK, but no error
 0x5 General dump
 0x6 0x30-0x39 Song dump
 0x7 0x30-0x39 0x30-0x39 Perf dump
+
+================================================================================
+
+# Sample format
+
+# use convert_sample.sh
+# convert to PCM
+sox -b 16 -c 1 -e unsigned -B -t raw -r SAMPLERATE FILE sample.wav
+
+# playback at srate*10?
