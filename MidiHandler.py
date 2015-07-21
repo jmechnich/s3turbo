@@ -1,4 +1,4 @@
-import pypm, signal
+import pypm, signal, os, time
 from multiprocessing import Process, Pipe
 
 def isSysEx(msg):
@@ -98,6 +98,8 @@ class MidiHandler(object):
                 break
             
             #while not MidiIn.Poll(): pass
+            # sleep 1ms to keep CPU usage down
+            time.sleep(1e-3)
             MidiData = MidiIn.Read(bufsize)
             nev = len(MidiData)
             for msg in MidiData:
