@@ -56,6 +56,7 @@ S3Functions = {
     "D_ACK"                  : (0x5, 0x7F), # DEVICE ACK
     }
 
+# Tries to match message to S3 function
 def S3FunctionName(msg):
     func    = (msg[2] >> 4)
     subfunc = msg[3]
@@ -63,7 +64,8 @@ def S3FunctionName(msg):
         if v == (func,subfunc):
             return k
     return None
-    
+
+# not used but defined in manual
 class S3HandshakeMessage(object):
     @staticmethod
     def WAIT(function,chan=0,ownchan=0):
@@ -86,6 +88,7 @@ class S3HandshakeMessage(object):
         fun, subfun = S3Functions[function]
         return [ 0xF0, 0x2F, fun << 4 | chan, subfun, command, ownchan, 0xF7 ]
 
+# S3 message skeleton
 class MSCEIMessage(object):
     def __init__(self, *args, **kwargs):
         super(MSCEIMessage,self).__init__()
@@ -131,51 +134,45 @@ class MSCEIMessage(object):
         ret.append(self.term)
         return ret
 
+# main parser class
 class SysExParser(object):
     def __init__(self,send_conn,debug=False):
         super(SysExParser,self).__init__()
         self.send_conn = send_conn
         self.debug     = debug
+        self.dump_file = None
 
         self.handlers = {
+            # FILE FUNCTIONS  FILE_F
             "F_DHDR":      self.handleFileDumpHeader,
             "F_DPKT":      self.handleFileDumpDataBlock,
             "DIR_HDR":     self.handleFileDumpHeader,
+            "F_WAIT"     : noop,
+            # DEVICE COMMAND  DEVICE_CMD
             "STAT_ANSWER": self.handleStatusAnswer,
             "DATA_HEADER": self.handleDirectoryAnswer,
             "DATA_DUMP"  : self.handleDataDump,
             "DIR_ANSWER" : self.handleDirectoryAnswer,
             "D_WAIT"     : noop,
         }
-        self.currentHandler  = None
-        self.currentDumpFile = None
 
     def __del__(self):
-        if self.currentDumpFile:
-            self.currentDumpFile.close()
+        if self.dump_file:
+            self.dump_file.close()
             print "Closed dump file"
 
     def createDumpFile(self):
         timestamp = time.strftime("%Y%m%d%H%M%S")
         fname="dump_%s.bin" % timestamp
-        self.currentDumpFile = open(fname,"wb")
+        self.dump_file = open(fname,"wb")
         print "Opened dump file '%s'" % fname
         
     def dump(self,data):
-        if not self.currentDumpFile:
+        if not self.dump_file:
             self.createDumpFile()
-        self.currentDumpFile.write(bytearray(data))
+        self.dump_file.write(bytearray(data))
         
-    def handleStatusAnswer(self,msg):
-        self.sendSysEx( MSCEIMessage(fromName="D_WAIT"))
-        offset= 5 + 3*8
-        cc = msg[offset]
-        cc_calc = checksum(msg[1:offset])
-        if cc == cc_calc:
-            self.sendSysEx( MSCEIMessage(fromName="D_ACK"))
-        else:
-            self.sendSysEx( MSCEIMessage(fromName="D_NACK"))
-
+    # FILE FUNCTIONS  FILE_F
     def handleFileDumpHeader(self,msg):
         self.sendSysEx( MSCEIMessage(fromName="F_WAIT"))
         offset=17 + 2*8
@@ -207,6 +204,17 @@ class SysExParser(object):
         else:
             self.sendSysEx( MSCEIMessage(fromName="F_NACK"))
 
+    # DEVICE COMMAND  DEVICE_CMD
+    def handleStatusAnswer(self,msg):
+        self.sendSysEx( MSCEIMessage(fromName="D_WAIT"))
+        offset= 5 + 3*8
+        cc = msg[offset]
+        cc_calc = checksum(msg[1:offset])
+        if cc == cc_calc:
+            self.sendSysEx( MSCEIMessage(fromName="D_ACK"))
+        else:
+            self.sendSysEx( MSCEIMessage(fromName="D_NACK"))
+
     def handleDataDump(self,msg):
         self.sendSysEx( MSCEIMessage(fromName="D_WAIT"))
         noctets = msg[5]
@@ -234,40 +242,23 @@ class SysExParser(object):
             self.sendSysEx( MSCEIMessage(fromName="D_NACK"))
         
     def parse(self, msg, timestamp=-1):
-        if msg[0] == 0xF0:
-            # Universal non-realtime SysEx header
-            if msg[1] == 0x7E:
-                # SampleDumpHeader, SampleDumpDataPacket, SampleDumpRequest
-                if msg[3] in [ 0x1, 0x2, 0x3 ]:
-                    if not self.currentHandler:
-                        self.currentHandler = SampleDumpHandler(debug=self.debug)
-                    self.send_conn.send(self.currentHandler.parse(msg))
-                # WAIT
-                elif msg[3] == 0x7C:
-                    pass
-                # cancel (why?)
-                elif msg[3] == 0x7D:
-                    if self.currentHandler:
-                        del self.currentHandler
-                        self.currentHandler = None
-                # ACK
-                elif msg[3] == 0x7F:
-                    if self.currentHandler:
-                        self.send_conn.send(self.currentHandler.parse(msg))
-            else:
-                fname = S3FunctionName(msg)
-                if fname:
-                    print "Received", fname, "@", timestamp
-                    printer = MessagePrinter.get(fname,None)
-                    if printer: printer(msg)
-                    handler = self.handlers.get(fname, None)
-                    if handler: handler(msg)
-                    else: print [ hex(b) for b in msg ]
-                    print
-        else:
-            print 'Unknown message type:', hex(func), hex(subfunc)
+        if msg[0] != 0xF0:
+            print 'Non-sysex message'
             print [ hex(b) for b in msg ]
             print
+            return
+
+        fname = S3FunctionName(msg)
+        if not fname:
+            return
+        
+        print "Received", fname, "@", timestamp
+        printer = MessagePrinter.get(fname,None)
+        if printer: printer(msg)
+        handler = self.handlers.get(fname, None)
+        if handler: handler(msg)
+        else: print [ hex(b) for b in msg ]
+        print
 
     def sendSysEx(self,msg,timestamp=0):
         fname = S3FunctionName(msg.raw())

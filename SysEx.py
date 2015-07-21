@@ -1,3 +1,7 @@
+import time, os
+
+from Util import checksum
+
 class HandshakeMessage(object):
     @staticmethod
     def EOF(target=0x0, packetnumber=0x0):
@@ -29,23 +33,25 @@ class HandshakeMessage(object):
         return [ 0xF0, 0x7E, target, subid, packetnumber, 0xF7 ]
 
 class SampleDumpHandler(object):
-    def __init__(self,debug=False):
+    def __init__(self,debug=False,samplelist=None):
         super(SampleDumpHandler,self).__init__()
         self.debug=debug
+        self.samplelist = samplelist
         self.reset()
         
     def __del__(self):
         if len(self.data):
-            self.dumpFile()
+            self.saveFile()
 
     def reset(self):
         self.header  = {}
-        self.request = {}
         self.data = []
         self.lastpacket = 0
         self.raw = []
         self.packetcounter = 0
         self.dump_start = 0
+        self.exppacket = 0
+        self.starttime = 0
         
     def parse(self,msg):
         status = None
@@ -65,28 +71,32 @@ class SampleDumpHandler(object):
             print "Size mismatch, is", len(msg)
             return HandshakeMessage.NAK(packetnumber=self.lastpacket)
 
+        speriod = int(msg[9]  << 14 | msg[8]  << 7 | msg[7])
+        srate   = 1./(speriod *1e-9)
         self.header = {
             "target_id"        : msg[2],
             "sample_number"    : msg[5] << 7 | msg[4],
             "sample_format"    : msg[6],
-            "sample_period"    : msg[9]  << 14 | msg[8]  << 7 | msg[7],
+            "sample_period"    : speriod,
+            "sample_rate"      : "%d Hz" % srate,
             "sample_length"    : msg[12] << 14 | msg[11] << 7 | msg[10],
             "sample_loop_start": msg[15] << 14 | msg[14] << 7 | msg[13],
             "sample_loop_end"  : msg[18] << 14 | msg[17] << 7 | msg[16],
             "loop_type"        : msg[19],
             }
 
+        if self.debug:
+            print "Sample Dump Header"
+            print "  Data:"
+            for k,v in self.header.iteritems():
+                print "    %s:" % k, v
+
+        self.raw += msg
         format = int(self.header["sample_format"])
         length = int(self.header["sample_length"])
-
-        print "Sample Dump Header"
-        print "  Data:"
-        for k,v in self.header.iteritems():
-            print "    %s:" % k, v
-        print "Expecting", (format+6)/7*length/120+1, "packets"
-        print
-        
-        self.raw += msg
+        self.exppacket = (format+6)/7*length/120+1
+        print "Receiving sample, expecting", self.exppacket, "packets"
+        self.starttime = time.time()
         return HandshakeMessage.ACK(packetnumber=self.lastpacket)
     
     def parsePacket(self, msg):
@@ -116,7 +126,11 @@ class SampleDumpHandler(object):
         self.raw += msg
         self.packetcounter += 1
         if self.packetcounter % 100 == 0:
-            print "Received", self.packetcounter, "packets"
+            elapsed = (time.time()-self.starttime)
+            rate = self.packetcounter/elapsed
+            print "Received %d packets in %.1f seconds (%.1f pkts/sec)" % (
+                self.packetcounter, elapsed, rate
+                )
         return HandshakeMessage.ACK(packetnumber=self.lastpacket)
 
     def parseRequest(self,msg):
@@ -125,58 +139,88 @@ class SampleDumpHandler(object):
             print "printSampleDumpDataPacket: could not find EOX"
             return HandshakeMessage.NAK(packetnumber=self.lastpacket)
 
-        self.request = {
-            "target_id"    : msg[2],
-            "sample_number": msg[5] << 7 | msg[4],
-        }
+        samplenumber = int(msg[5] << 7 | msg[4])
 
-        print "Sample Dump Request"
-        print "  Data:"
-        for k,v in self.request.iteritems():
-            print "    %s:" % k, v
+        print "Received Sample Dump Request for sample", samplenumber
+        if self.debug:
+            print "  Data:"
+            print "        targetid:",  msg[2]
+            print "    samplenumber:", samplenumber
 
-        samplefile = "/tmp/sample.sds"
-        if os.path.exists(samplefile):
-            f = open(samplefile, "rb")
-            self.raw = [ ord(i) for i in f.read() ]
-            f.close()
-            n = self.raw.count(0xF7)
-            if n > 0:
-                print "Sending", n, "Sample Dump Packets (+ header)"
-                print
-                self.dump_start = self.raw.index(0xF7)+1
-                return self.raw[:self.dump_start]
+        samplefile = None
+        if self.samplelist and samplenumber < len(self.samplelist):
+            samplefile = self.samplelist[samplenumber]
+            print "Selected list index", samplenumber, repr(samplefile)
+        if not samplefile or not os.path.exists(samplefile):
+            samplefile = "sample.sds"
+            print "Selected fallback", repr(samplefile)
+        if not os.path.exists(samplefile):
+            print "No sample to send"
+            return HandshakeMessage.Cancel(packetnumber=self.lastpacket)
+            
+        f = open(samplefile, "rb")
+        self.raw = [ ord(i) for i in f.read() ]
+        f.close()
+        n = self.raw.count(0xF7)
+        if n > 0:
+            print "Sending", n, "Sample Dump Packets (+ header)"
+            self.starttime = time.time()
+            self.dump_start = self.raw.index(0xF7)+1
+            self.packetcounter += 1
+            return self.raw[:self.dump_start]
         
         return HandshakeMessage.Cancel(packetnumber=self.lastpacket)
 
     def continueDump(self):
         n = self.raw[self.dump_start:].count(0xF7)
         if n == 0:
+            elapsed = time.time()-self.starttime
+            print "Sent %d packets in %.1f seconds (%.1f bytes/sec)" % (
+                self.packetcounter, elapsed, len(self.raw)/elapsed)
             self.reset()
             return HandshakeMessage.EOF(packetnumber=self.lastpacket)
         
         ds = self.dump_start
         self.dump_start = self.raw.index(0xF7,self.dump_start)+1
+        if self.packetcounter % 100 == 0:
+            print "Sent %d packets" % self.packetcounter
+        self.packetcounter += 1
         return self.raw[ds:self.dump_start]
         
-    def dumpFile(self, filename=None):
+    def saveFile(self, filename=None):
         if not filename:
-            filename = "/tmp/sample"
+            timestamp = time.strftime("%Y%m%d%H%M%S")
+            filename = "sample_%s" % timestamp
+
+        rate = self.packetcounter*120/(time.time()-self.starttime)
         print "Packets received:", self.packetcounter
-        print "Dumping sample"
+        print "Packets expected:", self.exppacket
+        print "Average rate:     %.1f bytes/sec" % rate
+        print
+        print "Saving to", filename
+
+        # concatenation of sysex messages
         f = open(filename+".sds", "wb")
         f.write(bytearray(self.raw))
         f.close()
+
+        # sample data only (7-bit encoded)
         f = open(filename+".dmp", "wb")
         f.write(bytearray(self.data))
         f.close()
+
+        # decoded sample data
         format = int(self.header['sample_format'])
         f = open(filename+".raw", "wb")
         if format == 14:
-            out = []
-            pos = 0
+            out  = []
+            pos  = 0
+            # stretch to 16-bit
+            norm = 2
             while pos < len(self.data):
-                tmp = self.data[pos] << 7 | self.data[pos+1]
+                # assume MSB first
+                tmp = self.data[pos] << (7+norm) | self.data[pos+1] << norm
+                # hard 16-bit conversion, store MSB first
                 out.append(tmp >> 8)
                 out.append(tmp & 0xFF)
                 pos += 2
@@ -185,6 +229,8 @@ class SampleDumpHandler(object):
             print format, "bit samples are not supported"
             print>>f, format, "bit samples are not supported"
         f.close()
+
+        # sample properties
         f = open(filename+".txt", "w")
         f.writelines( [ "%s: %s\n" % i for i in self.header.iteritems() ] )
         f.close()
