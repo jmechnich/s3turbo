@@ -124,11 +124,14 @@ def printDirectoryAnswer(msg):
         print "  remaining bytes:", [hex(b) for b in msg[offset+1:]]
 
 MessagePrinter = {
+    # FILE FUNCTIONS  FILE_F
     "F_DHDR"     : printFileDumpHeader,
     "F_DPKT"     : printFileDumpDataBlock,
     "DIR_HDR"    : printFileDumpHeader,
     "F_ERR"      : printError,
+    # EDIT FUNCTIONS  EDIT_F
     "_UPDATE"    : printUpdate,
+    # DEVICE COMMAND  DEVICE_CMD
     "STAT_ANSWER": printStatusAnswer,
     "DATA_HEADER": printDirectoryAnswer,
     "DATA_DUMP"  : printFileDumpDataBlock,
