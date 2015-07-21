@@ -1,21 +1,42 @@
-# Trigger RAM dump
-
-./s3sysex.py --indev 3 --outdev 2 --command STAT_REQUEST --exit
-./s3sysex.py --indev 3 --outdev 2 --command F_ACK
-
-================================================================================
-
-# SysEx Bank/Perf change does not seem to work?
-
-./s3sysex.py --indev 3 --outdev 2 --debug --command BANK_PERF_CHG --exit 0x4 0x4
-
 ================================================================================
 
 # File directory request
 
-./s3sysex.py --indev 3 --outdev 2 --command DIR_DRQ --checksum --exit 'str2file("*")' 'str2hex("A:\\")'
+./s3sysex.py --command DIR_DRQ --checksum --exit 'str2file("*")' 'str2hex("A:\\")' | grep filename | sed "s,.*'\(.*\)',\1,g" | tee files.txt
 
-# dirname: BANKS, SETUP, *
+while read i; do echo $i; ./s3sysex.py --command DIR_DRQ --checksum --exit "str2file('$i')" 'str2hex("A:\\")'; done < files.txt 
+
+# dirname: BANKS, DATA, PROGRAM, SETUP, *
+A:-|
+   |-BANKS
+   | |-'Bank      0'
+   | |  ...
+   | |-'MSP2015   0'
+   |   |-PERF
+   |   | |-'AnyColour 0'
+   |   |
+   |   |-Song
+   |
+   |-DATA
+   | |-TMP
+   |   |-'money   TXL'
+   |
+   |-PROGRAM
+   |
+   |-SETUP
+     |-GENERAL
+     |-EFFECT1
+     |-EFFECT2
+     |-SOUNDMAP
+     |-SAMPLES
+     | |-'OrgCycI2TXL'
+     | |-'OrgCycI1TXL'
+     | |-'money   TXL'
+     |
+     |-SOUNDS
+       |-'AnyColour F'
+       |-'MONEY     E'
+       |-'OrganCycI1E'
 
 # location: <80 chars, NUL terminated
 # A:\ 0x41 0x3a 0x5c 0x0 internal
@@ -36,41 +57,26 @@ SOUNDMAP    filetype 9
 
 # File dump request
 
-./s3sysex.py --indev 3 --outdev 2 --command F_DREQ --checksum --exit 
+./s3sysex.py --command F_DREQ --checksum --exit "str2file('OrgCycI2TXL')" "str2hex('A:\\SETUP\\SAMPLES')"
 
 ================================================================================
 
 # Directory request
 
-./s3sysex.py --indev 3 --outdev 2 --command DIR_REQUEST --checksum 0x2 0x31 0x31 'str2file("*")' --debug --exit
+./s3sysex.py --command DIR_REQUEST --checksum --exit 0x2 0x30 0x30 'str2file("*")'
 
-type 0,1 -> Program Changes + Tune Request (0xF6)
-type 2-5 -> SOUNDS, SAMPLES
-type 6   -> Song
-type 7   -> Perf
-type 8   -> BANKS, REALTIME_1
+# arguments: TYPE BANK PERF FILENAME
+
+0x0 Program Changes on Chan 8
+0x1 Program Changes on Chan 9 + Tune Request (0xF6)
+0x2 SOUNDS, SAMPLES                          // ???
+0x3 SOUNDS, SAMPLES                          // ???
+0x4 SOUNDS, SAMPLES                          // ???
+0x5 SOUNDS, SAMPLES                          // ???
+0x6 Song                                     // works
+0x7 Perf                                     // works
+0x8 BANKS                                    // ???
+0x9                                          // file not found
+...
 
 gives two replies on D_WAIT/D_ACK, stops after F_WAIT/F_ACK, but no error
-
-================================================================================
-
-# Data request
-
-0x0 Sound dump
-0x1 Sample dump
-0x2 Soundmap dump
-0x3 Effect1 dump
-0x4 Effect2 dump
-0x5 General dump
-0x6 0x30-0x39 Song dump
-0x7 0x30-0x39 0x30-0x39 Perf dump
-
-================================================================================
-
-# Sample format
-
-# use convert_sample.sh
-# convert to PCM
-sox -b 16 -c 1 -e unsigned -B -t raw -r SAMPLERATE FILE sample.wav
-
-# playback at srate*10?

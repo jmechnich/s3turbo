@@ -59,5 +59,43 @@ Send a directory request to the synthesizer. Uses the custom python functions `s
 ./s3sysex.py --command DIR_DRQ --checksum --exit 'str2file("*")' 'str2hex("A:\\")'
 ```
 
+### Dumps
+
+```
+# Trigger RAM dump (not sure if bug)
+./s3sysex.py --command STAT_REQUEST --exit
+./s3sysex.py --command F_ACK --exit
+
+# Dump Soundmap, Effect1, Effect2, General
+./s3sysex.py --command DATA_REQUEST --checksum --exit 0x2 0x30 0x30 'str2file("*")'
+./s3sysex.py --command DATA_REQUEST --checksum --exit 0x3 0x30 0x30 'str2file("*")'
+./s3sysex.py --command DATA_REQUEST --checksum --exit 0x4 0x30 0x30 'str2file("*")'
+./s3sysex.py --command DATA_REQUEST --checksum --exit 0x5 0x30 0x30 'str2file("*")'
+
+# Dump Song 1 (Bank 0x30-0x39)
+./s3sysex.py --command DATA_REQUEST --checksum --exit 0x6 0x30 0x30 'str2file("*")'
+
+# Dump Performance (Bank 0x30-0x39 Perf 0x30-0x39)
+./s3sysex.py --command DATA_REQUEST --checksum --exit 0x7 0x30 0x30 'str2file("*")'
+
+# Other dump types
+# 0x0 Sound dump     // not working or wrong filename
+# 0x1 Sample dump    // not working or wrong filename
+
+```
+
+### Sample format
+The S2/S3 exports 14-bit encoded mono samples. When receiving a sample dump, the program creates four files:
+* sample_TIMESTAMP.sds: original stream of MIDI messages
+* sample_TIMESTAMP.txt: sample information (loops, samplerate, etc)
+* sample_TIMESTAMP.dmp: sample data dump (7-bit stream)
+* sample_TIMESTAMP.raw: sample data dump (16-bit unsigned Big Endian)
+
+The RAW file can be converted to PCM with `convert_sample.sh` or played back directly with:
+```
+# try samplerate*10
+play  -b 16 -c 1 -e unsigned -B -t raw -r SAMPLERATE sample.raw
+```
+
 ### Dependencies
 * `python-pypm` Portmidi wrapper for Python
