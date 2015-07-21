@@ -103,7 +103,7 @@ class MSCEIMessage(object):
         self.name = kwargs.get("fromName", None)
         if self.name:
             func, subfunc = S3Functions.get(self.name, (None, None))
-            if not func: raise Exception("Unknown Command")
+            if func is None: raise Exception("Unknown Command")
             
         self.magic    = kwargs.get("magic", 0xF0)
         self.vendor   = kwargs.get("vendor", 0x2F)
