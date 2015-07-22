@@ -9,34 +9,36 @@ while read i; do echo $i; ./s3sysex.py --command DIR_DRQ --checksum --exit "str2
 # dirname: BANKS, DATA, PROGRAM, SETUP, *
 A:-|
    |-BANKS
-   | |-'Bank      0'
+   | |-'Demo      9' (type 32, format 32, length    0)
+   | |-'B/Song9   8' (type 32, format 32, length    0)
    | |  ...
-   | |-'MSP2015   0'
+   | |-'MSP2015   0' (type 32, format 32, length    0)
    |   |-PERF
-   |   | |-'AnyColour 0'
+   |   | |-'AnyColour 0' (type  2, format  2, length 676)
    |   |
-   |   |-Song
+   |   |-Song (type  3, format  2, length 56)
    |
    |-DATA
-   | |-TMP
-   |   |-'money   TXL'
+   | |-HARDCPY (type 32, format 32, length 0)
+   |   |-'FIG_001 IMG' (type 8, format 0, length 1436)
    |
    |-PROGRAM
    |
    |-SETUP
-     |-GENERAL
-     |-EFFECT1
-     |-EFFECT2
-     |-SOUNDMAP
-     |-SAMPLES
-     | |-'OrgCycI2TXL'
-     | |-'OrgCycI1TXL'
-     | |-'money   TXL'
+     |-GENERAL  (type  5, format  2, length 1124)
+     |-EFFECT1  (type  6, format  2, length  824)
+     |-EFFECT2  (type  7, format  2, length  824)
+     |-SOUNDMAP (type  9, format  2, length 9440)
+     |-SAMPLES  (type 32, format 32, length    0)
+     | |-'OrgCycI2TXL' (type 8, format 2, length 20)
+     | |-'OrgCycI1TXL' (type 8, format 2, length 20)
+     | |-'money   TXL' (type 8, format 2, length 20)
      |
      |-SOUNDS
-       |-'AnyColour F'
-       |-'MONEY     E'
-       |-'OrganCycI1E'
+       |-'AnyColour F' (type 1, format 2, length 1056)
+       |-'MONEY     E' (type 1, format 2, length  880)
+       |-'OrganCycI1E' (type 1, format 2, length 1396)
+       |-...
 
 # location: <80 chars, NUL terminated
 # A:\ 0x41 0x3a 0x5c 0x0 internal
