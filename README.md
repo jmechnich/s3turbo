@@ -22,8 +22,6 @@ outdev: 3
 Sending a basic status request to the synthesizer. The `--exit` flag causes the program to terminate after one second of inactivity from the synthesizer.
 ```
 ./s3sysex.py --command STAT_REQUEST --exit
-Sending STAT_REQUEST @ 0
-Received STAT_ANSWER @ 51
   Data:
     ActBankPerf: (2, 1)
     FreeMem: 678632
@@ -34,8 +32,6 @@ Received STAT_ANSWER @ 51
     iRelease: 2
     iSubClass: 2
   checksum: 0x57 (calculated 0x57)
-Sending D_WAIT @ 0
-Sending D_ACK @ 0
 ```
 
 Change to Bank 1, Performance 1 and print debugging information. Additional command line arguments are appended to the message body.
@@ -52,10 +48,8 @@ Send a directory request to the synthesizer. Uses the custom python functions `s
 ```
 
 The first argument is the filename, second is the path. A: corresponds to RAM, B: to the current disk and C: to the RAM disk.
-```
 
 ## Dumps
-
 ```
 TYPE = [ 0x0, # Sound
          0x1, # Sample
@@ -73,9 +67,7 @@ TYPE = [ 0x0, # Sound
 
 BANK = ASCII Bank number (0x30-0x39), only used for TYPE 0x6, 0x7
 PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
-```
 
-```
 # List directory contents
 ./s3sysex.py --command DIR_REQUEST $TYPE $BANK $PERF 'str2file("*")'
 
@@ -98,8 +90,8 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
 
 ## Formats
 
-### Sound map format, variable length
 ```
+# Sound map format, variable length
  6 bytes header     01 02 02 09 02 02
 18 bytes map entry
    bytes  1-10      Sound Name
@@ -108,10 +100,8 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
    byte  13         Bank
    byte  14         Program
    bytes 15-18      unknown, 1e6ea562 for user, else 1b237000
-```
 
-### Effect1 map format, variable length
-```
+# Effect1 map format, variable length
  6 bytes header     01 02 02 06 02 01
 34 bytes map entry
    bytes  1-10      Effect name
@@ -125,34 +115,29 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
    bytes 29-30      Effect param 3
    bytes 31-32      Effect param 4
    byte  33-34      Effect param 5
-```
 
-### Effect2 map format, variable length
-```
+# Effect2 map format, variable length
  6 bytes header     01 02 02 07 02 01
 34 bytes map entry, see Effect 1 map
-```
 
-### General format, possibly constant length 1127
-```
+# General format, possibly constant length 1127
  6 bytes header     01 02 02 05 02 01
  remaining unknown
-```
 
-### Performance format, possibly constant length 252
-```
+# Performance format, possibly constant length 252
  6 bytes header     01 02 02 03 02 01
  remaining unknown
 ```
 
 ### Sample format
-The S2/S3 exports 14-bit encoded mono samples. When receiving a sample dump, the program creates four files:
+The S2/S3 exports 14-bit encoded mono samples. When receiving a sample dump, the program creates five files:
 * sample_TIMESTAMP.sds: original stream of MIDI messages
 * sample_TIMESTAMP.txt: sample information (loops, samplerate, etc)
 * sample_TIMESTAMP.dmp: sample data dump (7-bit stream)
-* sample_TIMESTAMP.raw: sample data dump (16-bit unsigned Big Endian)
+* sample_TIMESTAMP.raw: raw sample data (16-bit unsigned Big Endian)
+* sample_TIMESTAMP.wav: PCM sample data (16-bit signed Little Endian )
 
-The RAW file can be converted to PCM with `convert_sample.sh` or played back directly with:
+The RAW file can be played back with:
 ```
 # try samplerate*10
 play  -b 16 -c 1 -e unsigned -B -t raw -r SAMPLERATE sample.raw
@@ -160,3 +145,4 @@ play  -b 16 -c 1 -e unsigned -B -t raw -r SAMPLERATE sample.raw
 
 ## Dependencies
 * `python-pypm` Portmidi wrapper for Python
+* `python-progress` Progress bar for Python
