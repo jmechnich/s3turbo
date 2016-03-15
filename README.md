@@ -75,13 +75,28 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
 ./s3sysex.py --command DATA_REQUEST $TYPE $BANK $PERF 'str2file("*")'
 
 # Dump Sound ("SoundName" from DIR_REQUEST)
-./s3sysex.py --command DATA_REQUEST 0x0 0x0 0x0 'str2file("SoundName")'
+./s3sysex.py --command DATA_REQUEST 0 0 0 'str2file("SoundName")'
+
+# Dump Sample ("SampleName" from DIR_REQUEST)
+./s3sysex.py --command DATA_REQUEST 1 0 0 'str2file("SampleName")'
+
+# Dump SOUNDMAP (filename argument ignored)
+./s3sysex.py --command DATA_REQUEST 2 0 0 'str2file("*")'
+
+# Dump EFFECT1 (filename argument ignored)
+./s3sysex.py --command DATA_REQUEST 3 0 0 'str2file("*")'
+
+# Dump EFFECT2 (filename argument ignored)
+./s3sysex.py --command DATA_REQUEST 4 0 0 'str2file("*")'
+
+# Dump GENERAL (filename argument ignored)
+./s3sysex.py --command DATA_REQUEST 5 0 0 'str2file("*")'
 
 # Dump Song 1 (Bank 0x30-0x39)
-./s3sysex.py --command DATA_REQUEST 0x6 0x30 0x30 'str2file("*")'
+./s3sysex.py --command DATA_REQUEST 6 0x30 0x30 'str2file("*")'
 
 # Dump Performance (Bank 0x30-0x39 Perf 0x30-0x39)
-./s3sysex.py --command DATA_REQUEST 0x7 0x30 0x30 'str2file("*")'
+./s3sysex.py --command DATA_REQUEST 7 0x30 0x30 'str2file("*")'
 
 # Trigger RAM dump (probably bug)
 ./s3sysex.py --command STAT_REQUEST --exit
