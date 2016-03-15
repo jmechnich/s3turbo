@@ -2,28 +2,30 @@
 
 import argparse, os, sys, time
 
-from MidiHandler import MidiHandler, isSysEx
-from S3Turbo import MSCEIMessage, SysExParser
-from SysEx import SampleDumpHandler
+from s3sysex.MidiHandler import MidiHandler, isSysEx
+from s3sysex.S3Turbo import MSCEIMessage, SysExParser
+from s3sysex.SysEx import SampleDumpHandler
 
 # for command-line evaluation
-from Util import str2file, str2hex
+from s3sysex.Util import str2file, str2hex
 
 def main():
     # command-line parsing
     parser = argparse.ArgumentParser(description='Send and receive midi messages')
-    parser.add_argument('--indev', type=int, default=-1, action='store',
+    parser.add_argument('-i', '--indev', type=int, default=-1, action='store',
                         help='MIDI input device')
-    parser.add_argument('--outdev', type=int, default=-1, action='store',
+    parser.add_argument('-o', '--outdev', type=int, default=-1, action='store',
                         help='MIDI output device')
-    parser.add_argument('--command', type=str, action='store',
+    parser.add_argument('-l', '--listdev', action='store_true',
+                        help='list MIDI devices and exit')
+    parser.add_argument('-c', '--command', type=str, action='store',
                         help='send MIDI command')
-    parser.add_argument('--debug', action='store_true',
+    parser.add_argument('-d', '--debug', action='store_true',
                         help='enable debug output')
-    parser.add_argument('--exit', action='store_true',
+    parser.add_argument('-x', '--exit', action='store_true',
                         help='exit after executing command')
     parser.add_argument('--checksum', action='store_true',
-                        help='append checksum to command')
+                        help='force appending checksum to command')
     parser.add_argument('--samples', nargs="+",
                         help='list of SDS files for sample upload')
     parser.add_argument('args', nargs='*',
@@ -40,7 +42,15 @@ def main():
     args = parser.parse_args()
 
     try:
-        # MidiHandler
+        # list MIDI devices and exit
+        if args.listdev:
+            print "Inputs:"
+            MidiHandler.print_dev(MidiHandler.INPUT)
+            print "Outputs:"
+            MidiHandler.print_dev(MidiHandler.OUTPUT)
+            sys.exit(0)
+            
+        # MidiHandler, filter clock messages
         filter = [
            [ 0xf8 ], # midi clock
         ]
@@ -60,7 +70,7 @@ def main():
                     else:
                         cmdargs.append(a)
             parser.sendSysEx(MSCEIMessage(*cmdargs, fromName=args.command,
-                                          appendChecksum=args.checksum))
+                                          forceChecksum=args.checksum))
 
         # poll for incoming messages
         currentHandler = None
@@ -91,14 +101,14 @@ def main():
                         if currentHandler:
                             midi.send_conn.send((0,currentHandler.parse(msg)))
                 else:
-                    parser.parse(msg, timestamp)
+                    if not parser.parse(msg, timestamp): break
             elif args.exit:
                 break
     except EOFError, e:
         print "EOFError", e
         sys.exit(1)
     except KeyboardInterrupt:
-        pass
+        print
     #except Exception, e:
     #    print e
     #    sys.exit(1)

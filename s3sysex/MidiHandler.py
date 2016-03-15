@@ -72,7 +72,7 @@ class MidiHandler(object):
             # sysex
             if msg[0] == 0xF0 and msg[-1] == 0xF7:
                 if debug:
-                    print "Sending", timestamp, [ hex(b) for b in msg ]
+                    print "Sending  SysEx:", timestamp, [ hex(b) for b in msg ]
                 MidiOut.WriteSysEx( timestamp, msg)
             else:
                 print "Trying to send non-sysex message"
@@ -123,7 +123,7 @@ class MidiHandler(object):
                     if 0xF7 in sysex:
                         sysex = sysex[:sysex.index(0xF7)+1]
                         if debug:
-                            print "Received", sysex_timestamp, \
+                            print "Received SysEx:", sysex_timestamp, \
                                 [hex(b) for b in sysex ]
                         recv_conn.send( (sysex_timestamp, sysex))
                         sysex = []

@@ -1,4 +1,4 @@
-from Util import checksum, conv7_8, noop, convertToShort, convertToLong
+from s3sysex.Util import checksum, conv7_8, noop, convertToShort, convertToLong, hexdump
 
 def printError(msg):
     errs = [ 'No_error', 'Job_invalid', 'Job_in_use', 'Operation_invalid',
@@ -22,6 +22,18 @@ def printUpdate(msg):
     group  = msg[5]
     print "family:", family
     print "group: ", group
+
+def timeToStr(short):
+    s=short&0x1f
+    m=(short>>5)&0x3f
+    h=(short>>11)&0x1f
+    return "%02d:%02d.%02d" % (h,m,s)
+
+def dateToStr(short):
+    d=(short&0xf)
+    m=(short>>5)&0xf
+    y=((short>>9)&0xf)+80
+    return "%02d/%02d/%02d" % (d,m,y)
 
 def printStatusAnswer(msg):
     offset=5
@@ -47,7 +59,7 @@ def printStatusAnswer(msg):
     if msg[offset+1] != 0xF7:
         print "  remaining bytes:", [hex(b) for b in msg[offset+1:]]
 
-def printFileDumpHeader(msg):
+def printFileDumpHeader(msg,swapDateTime=False,prettyPrint=True):
     offset=17
     data = []
     for i in xrange(2):
@@ -59,10 +71,14 @@ def printFileDumpHeader(msg):
         offset += 1
     offset+=1
     datadict = {
-        "filename"           : repr(str(bytearray(msg[5:16]))),
+        "filename"           : str(bytearray(msg[5:16])),
         "flags"              : msg[16],
-        "info.Time"          : convertToShort(data[0:2]),
-        "info.Date"          : convertToShort(data[2:4]),
+        "info.Time"          : timeToStr(convertToShort(data[2:4])
+                                         if swapDateTime
+                                         else convertToShort(data[0:2])),
+        "info.Date"          : dateToStr(convertToShort(data[0:2])
+                                         if swapDateTime
+                                         else convertToShort(data[2:4])),
         "info.Length"        : convertToLong(data[4:8]),
         "info.DeviceClass"   : data[8],
         "info.DeviceSubClass": data[9],
@@ -70,26 +86,41 @@ def printFileDumpHeader(msg):
         "info.FileType"      : data[11],
         "info.FileFormat"    : data[12],
     }
-    print "  Data:"
-    for k,v in sorted(datadict.iteritems()):
-        print "    %s:" % k, v
-    print "  checksum:", hex(msg[offset]), \
-        "(calculated 0x%x)" % checksum(msg[1:offset])
-    if msg[offset+1] != 0xF7:
-        print "  remaining bytes:", [hex(b) for b in msg[offset+1:]]
+    if prettyPrint:
+        print "%s %8d %s %s %2s %2s %2s" % (datadict["filename"].ljust(13),
+                                            datadict["info.Length"],
+                                            datadict["info.Date"],
+                                            datadict["info.Time"],
+                                            datadict["flags"],
+                                            datadict["info.FileType"],
+                                            datadict["info.FileFormat"])
+    else:
+        print "  Data:"
+        for k,v in sorted(datadict.iteritems()):
+            print "    %s:" % k, v
+        print "  checksum:", hex(msg[offset]), \
+            "(calculated 0x%x)" % checksum(msg[1:offset])
+        if msg[offset+1] != 0xF7:
+            print "  remaining bytes:", [hex(b) for b in msg[offset+1:]]
 
-def printFileDumpDataBlock(msg):
+def printDirHeader(msg):
+    printFileDumpHeader(msg,swapDateTime=True)
+    
+def printFileDumpDataBlock(msg,prettyPrint=True):
     noctets = msg[5]
     offset=6
     #data = []
     for i in xrange(noctets):
         #data += conv7_8(msg[offset:offset+8])
         offset += 8
-    print "  Data:"
-    print "    noctets:", noctets
-    #print "       data:", data
-    print "  checksum:", hex(msg[offset]), \
-        "(calculated 0x%x)" % checksum(msg[1:offset])
+    if prettyPrint:
+        pass
+    else:
+        print "  Data:"
+        print "    noctets:", noctets
+        #print "       data:", data
+        print "  checksum:", hex(msg[offset]), \
+            "(calculated 0x%x)" % checksum(msg[1:offset])
     if msg[offset+1] != 0xF7:
         print "  remaining bytes:", [hex(b) for b in msg[offset+1:]]
 
@@ -105,13 +136,12 @@ def printDirectoryAnswer(msg):
         "perf"          : msg[7],
         "filename1"     : repr(str(bytearray(msg[8:19]))),
         "fileflags"     : msg[19],
-        #"data"          : [hex(d) for d in data],
-        "datastr"       : repr(str(bytearray(data))),
-        "info.Time"          : convertToShort(data[0:2]),
-        "info.Date"          : convertToShort(data[2:4]),
-        "info.Length"        : convertToLong(data[4:8]),
-        "info.InstrID"       : data[8],
-        "info.FileID"        : data[9],
+        "datastr"       : hexdump(data),
+        "info.Time"     : convertToShort(data[0:2]),
+        "info.Date"     : convertToShort(data[2:4]),
+        "info.Length"   : convertToLong(data[4:8]),
+        "info.InstrID"  : data[8],
+        "info.FileID"   : data[9],
         "filename2"     : repr(str(bytearray(msg[offset:offset+11]))),
     }
     offset += 11
@@ -127,7 +157,7 @@ MessagePrinter = {
     # FILE FUNCTIONS  FILE_F
     "F_DHDR"     : printFileDumpHeader,
     "F_DPKT"     : printFileDumpDataBlock,
-    "DIR_HDR"    : printFileDumpHeader,
+    "DIR_HDR"    : printDirHeader,
     "F_ERR"      : printError,
     # EDIT FUNCTIONS  EDIT_F
     "_UPDATE"    : printUpdate,

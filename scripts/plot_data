@@ -1,0 +1,33 @@
+#!/usr/bin/octave -qf
+
+arg_list = argv();
+for i = 1:nargin
+  filename = arg_list{i};
+  f = fopen(filename,"rb","ieee-be");
+  datas16 = fread(f,Inf,"int16")';
+  frewind(f);
+  datau16 = fread(f,Inf,"uint16")';
+  fclose(f);
+
+  first = 1;
+  last  = min(10000,size(datas16,2));
+  figure('Position',[200,200,1280,800])
+
+  subplot(2,2,1);
+  plot(datas16(first:last));
+  title("s16");
+  
+  subplot(2,2,2);
+  plot(abs(fft(bitunpack(datas16(first:last))))(1:16));
+  title("s16 fft");
+  
+  subplot(2,2,3);
+  plot(datau16(first:last));
+  title("u16");
+
+  subplot(2,2,4);
+  plot(abs(fft(bitunpack(datau16(first:last))))(1:16));
+  title("u16 fft");
+endfor
+
+pause()

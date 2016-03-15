@@ -7,13 +7,14 @@
 while read i; do echo $i; ./s3sysex.py --command DIR_DRQ --checksum --exit "str2file('$i')" 'str2hex("A:\\")'; done < files.txt 
 
 # dirname: BANKS, DATA, PROGRAM, SETUP, *
+# sounds suffix: E - RAM-based sound, F - ROM-based sound
 A:-|
    |-BANKS
    | |-'Bank      0'
    | |  ...
    | |-'MSP2015   0'
    |   |-PERF
-   |   | |-'AnyColour 0'
+   |   | |-'Perf      0'
    |   |
    |   |-Song
    |
@@ -40,7 +41,7 @@ A:-|
 
 # location: <80 chars, NUL terminated
 # A:\ 0x41 0x3a 0x5c 0x0 internal
-# B:\ 0x42 0x3a 0x5c 0x0 ramdisk 
+# B:\ 0x42 0x3a 0x5c 0x0 current disk
 # C:\ 0x43 0x3a 0x5c 0x0 ramdisk 
 
 BANKS, DATA, PERF, PROGRAM, SAMPLES, SETUP, SOUNDS, banks filetype 32 (directory?)
@@ -50,7 +51,7 @@ Song        filetype 3
 GENERAL     filetype 5
 EFFECT1     filetype 6
 EFFECT2     filetype 7
-money   TXL filetype 8 (soundmap?)
+money   TXL filetype 8 (samples)
 SOUNDMAP    filetype 9
 
 ================================================================================

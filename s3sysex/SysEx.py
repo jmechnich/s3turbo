@@ -1,6 +1,6 @@
 import time, os
 
-from Util import checksum
+from s3sysex.Util import checksum, u2s, writeWAV
 
 class HandshakeMessage(object):
     @staticmethod
@@ -78,7 +78,7 @@ class SampleDumpHandler(object):
             "sample_number"    : msg[5] << 7 | msg[4],
             "sample_format"    : msg[6],
             "sample_period"    : speriod,
-            "sample_rate"      : "%d Hz" % srate,
+            "sample_rate"      : srate,
             "sample_length"    : msg[12] << 14 | msg[11] << 7 | msg[10],
             "sample_loop_start": msg[15] << 14 | msg[14] << 7 | msg[13],
             "sample_loop_end"  : msg[18] << 14 | msg[17] << 7 | msg[16],
@@ -196,42 +196,42 @@ class SampleDumpHandler(object):
         print "Packets received:", self.packetcounter
         print "Packets expected:", self.exppacket
         print "Average rate:     %.1f bytes/sec" % rate
-        print
         print "Saving to", filename
 
         # concatenation of sysex messages
-        f = open(filename+".sds", "wb")
-        f.write(bytearray(self.raw))
-        f.close()
+        with open(filename+".sds", "wb") as f:
+            f.write(bytearray(self.raw))
 
         # sample data only (7-bit encoded)
-        f = open(filename+".dmp", "wb")
-        f.write(bytearray(self.data))
-        f.close()
+        with open(filename+".dmp", "wb") as f:
+            f.write(bytearray(self.data))
 
         # decoded sample data
         format = int(self.header['sample_format'])
-        f = open(filename+".raw", "wb")
+        out  = []
         if format == 14:
-            out  = []
             pos  = 0
-            # stretch to 16-bit
-            norm = 2
             while pos < len(self.data):
-                # assume MSB first
-                tmp = self.data[pos] << (7+norm) | self.data[pos+1] << norm
-                # hard 16-bit conversion, store MSB first
-                out.append(tmp >> 8)
+                # assume big-endian
+                tmp = self.data[pos] << 7 | self.data[pos+1]
+                # convert to s16le
+                tmp = u2s(tmp)
                 out.append(tmp & 0xFF)
+                out.append(tmp >> 8)
                 pos += 2
-            f.write(bytearray(out))
+            print "Finished"
+            print
         else:
             print format, "bit samples are not supported"
-            print>>f, format, "bit samples are not supported"
-        f.close()
-
+        
+        if len(out):
+            # write raw file
+            with open(filename+".raw", "wb") as f:
+                f.write(bytearray(out))
+            # write WAV file
+            writeWAV(filename+".wav",int(self.header.get("sample_rate", 22050)),
+                     bytearray(out))
         # sample properties
-        f = open(filename+".txt", "w")
-        f.writelines( [ "%s: %s\n" % i for i in self.header.iteritems() ] )
-        f.close()
+        with open(filename+".txt", "w") as f:
+            f.writelines( [ "%s: %s\n" % i for i in self.header.iteritems() ] )
         self.reset()

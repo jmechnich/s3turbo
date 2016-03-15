@@ -37,8 +37,11 @@ def checksum(data):
     return ret
 
 # does nothing
-def noop(msg):
-    pass
+def noop(*args,**kwargs):
+    return True
+
+def cancel(*args,**kwargs):
+    return False
 
 # string to left-justified list of bytes of length 11
 def str2file(s):
@@ -49,3 +52,24 @@ def str2file(s):
 def str2hex(s):
     s = str(s)
     return [ ord(c) for c in s ] + [ 0x0 ]
+
+def hexdump(l):
+    FILTER = ''.join([(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)])
+    hexstr = ' '.join([ '%02x' % i for i in l ])
+    chrstr = ''.join([ FILTER[i] for i in l ])
+    return "%s  %s" %(hexstr, chrstr)
+
+def u2s(u16):
+    u16 -=  (1<<15)
+    if u16 < 0:
+        u16 += (1<<16)
+    return u16
+
+def writeWAV(filename,samplerate,data):
+    import wave
+    f = wave.open(filename, "wb")
+    f.setnchannels(1) # mono
+    f.setsampwidth(2) # 16-bit
+    f.setframerate(samplerate)
+    f.writeframes(data)
+    f.close()
