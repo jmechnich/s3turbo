@@ -165,7 +165,7 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
  6 bytes header     01 02 02 09 02 02
 18 bytes map entry
    bytes  1-10      Sound Name
-   byte  11         unknown, c0 for layer, c6 for user, else c2 or 00
+   byte  11         unknown, c0 - ROM layer, c5 - RAM sound, c6 - RAM sample sound, else c2 or 00
    byte  12         unknown (00)
    byte  13         Bank
    byte  14         Program
