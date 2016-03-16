@@ -178,7 +178,10 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
    bytes  1-10      Effect name
    bytes 11-12      zero
    byte  13         Effect number
-   bytes 14-21      unknown 7f 18 c8 70 00 00 00 00
+   byte  14         unknown (7f)
+   bytes 15-16      Date (18 c8)
+   bytes 17-18      Time (70 00)
+   bytes 19-21      unknown (00 00 00)
    byte  22         Effect type
    bytes 23-24      Level
    bytes 25-26      Effect param 1
