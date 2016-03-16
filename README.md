@@ -7,10 +7,9 @@ The General Music/GEM S2/S3 Turbo Music Processor is a synthesizer workstation f
 This tool provides an implementation of most of the commands from the manual.  It is also possible to send and receive sample dumps using SDS to the synthesizer (not tested with other instruments).
 
 ## Functionality
-* Send commands to the synthesizer (see `S3Turbo.py`)
+* Send commands to the synthesizer, see [s3sysex/S3Turbo.py](https://github.com/jmechnich/s3sysex/blob/master/s3sysex/S3Turbo.py)
 * Monitor MIDI messages and decode S2/S3 specific data
 * Send and receive sample dumps
-* Convert samples to PCM (`convert_sample.sh`)
 
 ## Usage
 
@@ -204,18 +203,11 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
 ```
 
 ### Sample format
-The S2/S3 exports 14-bit encoded mono samples. When receiving a sample dump, the program creates five files:
+The S2/S3 exports 14-bit encoded mono samples. When receiving a sample dump, the program creates the following files:
 * sample_TIMESTAMP.sds: original stream of MIDI messages
 * sample_TIMESTAMP.txt: sample information (loops, samplerate, etc)
-* sample_TIMESTAMP.dmp: sample data dump (7-bit stream)
-* sample_TIMESTAMP.raw: raw sample data (16-bit unsigned Big Endian)
-* sample_TIMESTAMP.wav: PCM sample data (16-bit signed Little Endian )
-
-The RAW file can be played back with:
-```
-# try samplerate*10
-play  -b 16 -c 1 -e unsigned -B -t raw -r SAMPLERATE sample.raw
-```
+* sample_TIMESTAMP.dmp: sample data dump (7-in-8-bit chunks)
+* sample_TIMESTAMP.wav: PCM sample data (s16le mono)
 
 ## Dependencies
 * `python-pypm` Portmidi wrapper for Python
