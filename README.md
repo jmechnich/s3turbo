@@ -166,20 +166,21 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
 18 bytes map entry
    bytes  1-10      Sound Name
    byte  11         unknown, c0 for layer, c6 for user, else c2 or 00
-   byte  12         unknown
+   byte  12         unknown (00)
    byte  13         Bank
    byte  14         Program
-   bytes 15-18      unknown, 1e6ea562 for user, else 1b237000
+   bytes 15-16      Date (1b 23 for factory presets)
+   bytes 17-18      Time (70 00 for factory presets)
 
 # Effect1 map format, variable length
  6 bytes header     01 02 02 06 02 01
 34 bytes map entry
    bytes  1-10      Effect name
-   bytes 11-12      zero
+   bytes 11-12      unknown (00 00)
    byte  13         Effect number
    byte  14         unknown (7f)
-   bytes 15-16      Date (18 c8)
-   bytes 17-18      Time (70 00)
+   bytes 15-16      Date (18 c8 for factory presets)
+   bytes 17-18      Time (70 00 for factory presets)
    bytes 19-21      unknown (00 00 00)
    byte  22         Effect type
    bytes 23-24      Level
