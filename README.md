@@ -47,7 +47,60 @@ Send a directory request to the synthesizer. Uses the custom python functions `s
 ./s3sysex.py --command DIR_DRQ 'str2file("*")' 'str2hex("A:\\")'
 ```
 
-The first argument is the filename, second is the path. A: corresponds to RAM, B: to the current disk and C: to the RAM disk.
+The first argument is the filename, second is the path.
+A: corresponds to RAM.
+B: corresponds to the current disk if loaded, to the RAM disk otherwise.
+C: is either empty if no disk is loaded or corresponds to the RAM disk.
+
+The general directory layout is
+```
+A:-|
+   |-BANKS                 (type 32, format 32)
+   | |-'BANKNAME  0'       (type 32, format 32)
+   | |-'BANKNAME  1'       (type 32, format 32)
+   | :
+   | |-'BANKNAME  9'       (type 32, format 32)
+   |   |-PERF              (type 32, format 32)
+   |   | |-'PERFNAME  0'   (type  2, format  2)
+   |   | |-'PERFNAME  1'   (type  2, format  2)
+   |   | :
+   |   | |-'PERFNAME  9'   (type  2, format  2)
+   |   |
+   |   |-Song              (type  3, format  2)
+   |
+   |-DATA                  (type 32, format 32)
+   | :_(e.g. screenshot from hardcopy program in HARDCPY/FIG_001 IMG)
+   |
+   |-PROGRAM               (type 32, format 32)
+   |
+   |-SETUP                 (type 32, format 32)
+     |-GENERAL             (type  5, format  2)
+     |-EFFECT1             (type  6, format  2)
+     |-EFFECT2             (type  7, format  2)
+     |-SOUNDMAP            (type  9, format  2)
+     |-SAMPLES             (type 32, format 32)
+     | |-'SAMPNAMETXL'     (type  8, format  2)
+     |
+     |-SOUNDS              (type 32, format 32)
+       |-'SOUNDNAME F'     (type  1, format  2)
+       |-'SOUNDNAME E'     (type  1, format  2)
+
+Sound suffixes:
+  E - RAM sound using RAM sample
+  F - RAM sound using ROM sample
+
+File types:
+  1 - Sound
+  2 - Performance
+  3 - Song
+  4 - ?
+  5 - General Setup
+  6 - Effect1 Setup
+  7 - Effect2 Setup
+  8 - Sample
+  9 - Soundmap Setup
+ 32 - Directory
+```
 
 ## Dumps
 ```
@@ -97,6 +150,9 @@ PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
 
 # Dump Performance (Bank 0x30-0x39 Perf 0x30-0x39)
 ./s3sysex.py --command DATA_REQUEST 7 0x30 0x30 'str2file("*")'
+
+# File dump request
+./s3sysex.py --command F_DREQ 'str2file("SampNameTXL")' 'str2hex("A:\\SETUP\\SAMPLES")'
 
 # Trigger RAM dump (probably bug)
 ./s3sysex.py --command STAT_REQUEST --exit

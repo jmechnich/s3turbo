@@ -1,16 +1,12 @@
 import pypm, signal, os, time
 from multiprocessing import Process, Pipe
 
-def isSysEx(msg):
-    if not msg or not len(msg):
-        return False
-    return msg[0] == 0xF0 and msg[-1] == 0xF7
-        
 class MidiHandler(object):
     INPUT=0
     OUTPUT=1
     
-    def __init__(self, indev=-1, outdev=-1, latency=10, msgfilter=[], debug=False):
+    def __init__(self, indev=-1, outdev=-1, latency=10, msgfilter=[],
+                 debug=False):
         super(MidiHandler,self).__init__()
         self.indev     = indev
         self.outdev    = outdev
@@ -31,16 +27,20 @@ class MidiHandler(object):
             self.print_dev(self.INPUT)
             self.indev = int(raw_input("Type input number: "))
         self.recv_conn, recv_conn = Pipe()
-        self.recv_proc = Process(target=MidiHandler.recv,
-                                 args=(recv_conn,self.indev,self.msgfilter,self.debug))
+        self.recv_proc = Process(
+            target=MidiHandler.recv,
+            args=(recv_conn,self.indev,self.msgfilter,self.debug)
+        )
 
     def initOutput(self):
         if self.outdev < 0:
             self.print_dev(self.OUTPUT)
             self.outdev = int(raw_input("Type output number: "))
         self.send_conn, send_conn = Pipe()
-        self.send_proc = Process(target=MidiHandler.send,
-                                 args=(send_conn,self.outdev,self.latency,self.debug))
+        self.send_proc = Process(
+            target=MidiHandler.send,
+            args=(send_conn,self.outdev,self.latency,self.debug)
+        )
 
     def start(self):
         self.recv_proc.start()
@@ -131,10 +131,12 @@ class MidiHandler(object):
                 else:
                     for k,v in status_bytes.iteritems():
                         if msgtype >> 4 == k:
-                            print "Received", v, ":", timestamp, [hex(b) for b in msg[0] ]
+                            print "Received", v, ":", timestamp, [
+                                hex(b) for b in msg[0] ]
                             break
                     else:
-                        print "Received", timestamp, [hex(b) for b in msg[0] ]
+                        print "Received", timestamp, [
+                            hex(b) for b in msg[0] ]
                     recv_conn.send( (timestamp, msg[0]))
         del MidiIn
                     

@@ -53,18 +53,22 @@ def str2hex(s):
     s = str(s)
     return [ ord(c) for c in s ] + [ 0x0 ]
 
+# dumps list of bytes in hex and character representation
 def hexdump(l):
-    FILTER = ''.join([(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)])
+    FILTER = ''.join([
+        (len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256) ])
     hexstr = ' '.join([ '%02x' % i for i in l ])
     chrstr = ''.join([ FILTER[i] for i in l ])
     return "%s  %s" %(hexstr, chrstr)
 
+# converts uint16 to int16
 def u2s(u16):
     u16 -=  (1<<15)
     if u16 < 0:
         u16 += (1<<16)
     return u16
 
+# writes data to a mono, 16-bit PCM WAVE file
 def writeWAV(filename,samplerate,data):
     import wave
     f = wave.open(filename, "wb")
@@ -73,3 +77,23 @@ def writeWAV(filename,samplerate,data):
     f.setframerate(samplerate)
     f.writeframes(data)
     f.close()
+
+# checks first and last byte in list for SysEx magic
+def isSysEx(msg):
+    if not msg or not len(msg):
+        return False
+    return msg[0] == 0xF0 and msg[-1] == 0xF7
+
+# converts S3 time integer to string
+def timeToStr(short):
+    s=short&0x1f
+    m=(short>>5)&0x3f
+    h=(short>>11)&0x1f
+    return "%02d:%02d.%02d" % (h,m,s)
+
+# converts S3 date integer to string
+def dateToStr(short):
+    d=(short&0xf)
+    m=(short>>5)&0xf
+    y=((short>>9)&0xf)+80
+    return "%02d/%02d/%02d" % (d,m,y)

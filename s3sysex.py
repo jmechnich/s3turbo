@@ -2,16 +2,16 @@
 
 import argparse, os, sys, time
 
-from s3sysex.MidiHandler import MidiHandler, isSysEx
-from s3sysex.S3Turbo import MSCEIMessage, SysExParser
-from s3sysex.SysEx import SampleDumpHandler
-
-# for command-line evaluation
-from s3sysex.Util import str2file, str2hex
+from s3sysex.MidiHandler import MidiHandler
+from s3sysex.SysExParser import SysExParser
+from s3sysex.MSCEIMessage import MSCEIMessage
+from s3sysex.SampleDumpHandler import SampleDumpHandler
+from s3sysex.Util import isSysEx, str2file, str2hex
 
 def main():
     # command-line parsing
-    parser = argparse.ArgumentParser(description='Send and receive midi messages')
+    parser = argparse.ArgumentParser(
+        description='Send and receive midi messages')
     parser.add_argument('-i', '--indev', type=int, default=-1, action='store',
                         help='MIDI input device')
     parser.add_argument('-o', '--outdev', type=int, default=-1, action='store',

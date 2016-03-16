@@ -1,4 +1,5 @@
 import time, os
+from progress.bar import IncrementalBar
 
 from s3sysex.Util import checksum, u2s, writeWAV
 
@@ -95,8 +96,10 @@ class SampleDumpHandler(object):
         format = int(self.header["sample_format"])
         length = int(self.header["sample_length"])
         self.exppacket = (format+6)/7*length/120+1
-        print "Receiving sample, expecting", self.exppacket, "packets"
         self.starttime = time.time()
+        self.bar = IncrementalBar(
+            "Receiving sample dump", max=self.exppacket,
+            suffix = '%(percent)d%% [%(elapsed_td)s / %(eta_td)s]')
         return HandshakeMessage.ACK(packetnumber=self.lastpacket)
     
     def parsePacket(self, msg):
@@ -125,12 +128,7 @@ class SampleDumpHandler(object):
         self.lastpacket = msg[4]
         self.raw += msg
         self.packetcounter += 1
-        if self.packetcounter % 100 == 0:
-            elapsed = (time.time()-self.starttime)
-            rate = self.packetcounter/elapsed
-            print "Received %d packets in %.1f seconds (%.1f pkts/sec)" % (
-                self.packetcounter, elapsed, rate
-                )
+        self.bar.next()
         return HandshakeMessage.ACK(packetnumber=self.lastpacket)
 
     def parseRequest(self,msg):
@@ -188,13 +186,13 @@ class SampleDumpHandler(object):
         return self.raw[ds:self.dump_start]
         
     def saveFile(self, filename=None):
+        self.bar.finish()
         if not filename:
             timestamp = time.strftime("%Y%m%d%H%M%S")
             filename = "sample_%s" % timestamp
 
         rate = self.packetcounter*120/(time.time()-self.starttime)
-        print "Packets received:", self.packetcounter
-        print "Packets expected:", self.exppacket
+        print "Packets received: %d/%d" % (self.packetcounter, self.exppacket)
         print "Average rate:     %.1f bytes/sec" % rate
         print "Saving to", filename
 
@@ -215,11 +213,10 @@ class SampleDumpHandler(object):
                 # assume big-endian
                 tmp = self.data[pos] << 7 | self.data[pos+1]
                 # convert to s16le
-                tmp = u2s(tmp)
+                tmp = u2s(tmp<<2)
                 out.append(tmp & 0xFF)
-                out.append(tmp >> 8)
+                out.append((tmp >> 8) & 0xFF)
                 pos += 2
-            print "Finished"
             print
         else:
             print format, "bit samples are not supported"
