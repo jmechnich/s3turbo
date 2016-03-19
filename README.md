@@ -20,7 +20,7 @@ outdev: 3
 ```
 Sending a basic status request to the synthesizer. The `--exit` flag causes the program to terminate after one second of inactivity from the synthesizer.
 ```
-./s3sysex.py --command STAT_REQUEST --exit
+./s3midi --command STAT_REQUEST
   Data:
     ActBankPerf: (2, 1)
     FreeMem: 678632
@@ -36,14 +36,14 @@ Sending a basic status request to the synthesizer. The `--exit` flag causes the 
 Change to Bank 1, Performance 1 and print debugging information. Additional command line arguments are appended to the message body.
 ```
 # Bank and Performance values in ASCII (0x30-0x39)
-./s3sysex.py --debug --command BANK_PERF_CHG 0x30 0x30 --exit
+./s3midi --debug --command BANK_PERF_CHG 0x30 0x30 --exit
 ```
 
 Send a directory request to the synthesizer. Uses the custom python functions `str2file` and `str2hex` to convert a string to lists of integers. `str2file` creates fixed 11 character filename padded with whitespace.  `str2hex` creates a 0-terminated list.
 
 ```
 # List everything
-./s3sysex.py --command DIR_DRQ 'str2file("*")' 'str2hex("A:\\")'
+./s3midi --command DIR_DRQ 'str2file("*")' 'str2hex("A:")'
 ```
 
 The first argument is the filename, second is the path.
@@ -121,41 +121,51 @@ BANK = ASCII Bank number (0x30-0x39), only used for TYPE 0x6, 0x7
 PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
 
 # List directory contents
-./s3sysex.py --command DIR_REQUEST $TYPE $BANK $PERF 'str2file("*")'
+./s3midi --command DIR_REQUEST $TYPE $BANK $PERF 'str2file("*")'
 
 # Dump 'file'
-./s3sysex.py --command DATA_REQUEST $TYPE $BANK $PERF 'str2file("*")'
+./s3midi --command DATA_REQUEST $TYPE $BANK $PERF 'str2file("*")'
 
-# Dump Sound ("SoundName" from DIR_REQUEST)
-./s3sysex.py --command DATA_REQUEST 0 0 0 'str2file("SoundName")'
+# Dump Sound ("SOUND     E" from DIR_REQUEST)
+# F_DREQ does not seem to work at all
+./s3midi --command DATA_REQUEST 0 0 0 'str2file("SOUND     E")'
 
-# Dump Sample ("SampleName" from DIR_REQUEST)
-./s3sysex.py --command DATA_REQUEST 1 0 0 'str2file("SampleName")'
+# Dump Sample ("SAMPLE  TXL" from DIR_REQUEST)
+# F_DREQ only dumps a few bytes, maybe some kind of metadata
+./s3midi --command DATA_REQUEST 1 0 0 'str2file("SAMPLE  TXL")'
 
 # Dump SOUNDMAP (filename argument ignored)
-./s3sysex.py --command DATA_REQUEST 2 0 0 'str2file("*")'
+./s3midi --command DATA_REQUEST 2 0 0 'str2file("*")'
+or
+./s3midi --command F_DREQ 'str2file("SOUNDMAP")' 'str2hex("A:\\SETUP\\")'
 
 # Dump EFFECT1 (filename argument ignored)
-./s3sysex.py --command DATA_REQUEST 3 0 0 'str2file("*")'
+./s3midi --command DATA_REQUEST 3 0 0 'str2file("*")'
+or
+./s3midi --command F_DREQ 'str2file("EFFECT1")' 'str2hex("A:\\SETUP\\")'
 
 # Dump EFFECT2 (filename argument ignored)
-./s3sysex.py --command DATA_REQUEST 4 0 0 'str2file("*")'
+./s3midi --command DATA_REQUEST 4 0 0 'str2file("*")'
+or
+./s3midi --command F_DREQ 'str2file("EFFECT2")' 'str2hex("A:\\SETUP\\")'
 
 # Dump GENERAL (filename argument ignored)
-./s3sysex.py --command DATA_REQUEST 5 0 0 'str2file("*")'
+./s3midi --command DATA_REQUEST 5 0 0 'str2file("*")'
+or
+./s3midi --command F_DREQ 'str2file("GENERAL")' 'str2hex("A:\\SETUP\\")'
 
 # Dump Song 1 (Bank 0x30-0x39)
-./s3sysex.py --command DATA_REQUEST 6 0x30 0x30 'str2file("*")'
+./s3midi --command DATA_REQUEST 6 0x30 0x30 'str2file("*")'
+or e.g.
+./s3midi --command F_DREQ 'str2file("Song")' 'str2hex("A:\\BANKS\\Bank 1    0\\")'
 
 # Dump Performance (Bank 0x30-0x39 Perf 0x30-0x39)
-./s3sysex.py --command DATA_REQUEST 7 0x30 0x30 'str2file("*")'
+./s3midi --command DATA_REQUEST 7 0x30 0x30 'str2file("*")'
+or e.g.
+./s3midi --command F_DREQ 'str2file("Perf      0")' 'str2hex("A:\\BANKS\\Bank 1    0\\PERF\\")'
 
-# File dump request
-./s3sysex.py --command F_DREQ 'str2file("SampNameTXL")' 'str2hex("A:\\SETUP\\SAMPLES")'
-
-# Trigger RAM dump (probably bug)
-./s3sysex.py --command STAT_REQUEST --exit
-./s3sysex.py --command F_ACK --exit
+# Dump hardcopy created with 'HARDCPY PRG'
+./s3midi --command F_DREQ 'str2file("FIG_001 IMG")' 'str2hex("A:\\DATA\\HARDCPY\\")'
 ```
 
 ## Formats
