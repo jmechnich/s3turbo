@@ -14,7 +14,7 @@ class SysExParser(object):
         self.debug     = debug
         self.dump_file = None
         self.dump_on = False
-        self.printer = MessagePrinter()
+        self.printer = MessagePrinter(debug=self.debug)
         self.handlers = {
             # FILE FUNCTIONS  FILE_F
             "F_DHDR":      self.handleFileDumpHeader,
@@ -148,7 +148,7 @@ class SysExParser(object):
         else:
             self.sendSysEx( MSCEIMessage(fromName="D_NACK"),
                             timestamp=timestamp+2)
-        return True
+        return False
 
     def handleDataDump(self,msg,timestamp):
         self.sendSysEx( MSCEIMessage(fromName="D_WAIT"))

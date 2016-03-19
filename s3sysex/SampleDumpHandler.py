@@ -200,7 +200,11 @@ class SampleDumpHandler(object):
         with open(filename+".sds", "wb") as f:
             f.write(bytearray(self.raw))
 
-        # sample data only (7-bit encoded)
+        # adjust data size to sample length
+        nsamples = int(self.header.get('sample_length',len(self.data)/2))
+        self.data = self.data[:nsamples*2]
+        
+        # sample data only (2x 7-bit chunks)
         with open(filename+".dmp", "wb") as f:
             f.write(bytearray(self.data))
 
@@ -231,4 +235,7 @@ class SampleDumpHandler(object):
         # sample properties
         with open(filename+".txt", "w") as f:
             f.writelines( [ "%s: %s\n" % i for i in self.header.iteritems() ] )
+            f.writelines(
+                [ "file_%s: %s.%s\n" % (suffix,filename,suffix) for suffix in [
+                    'sds', 'raw', 'dmp', 'wav' ] ])
         self.reset()

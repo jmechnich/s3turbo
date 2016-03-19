@@ -86,14 +86,33 @@ def isSysEx(msg):
 
 # converts S3 time integer to string
 def timeToStr(short):
-    s=short&0x1f
+    s=(short&0x1f)<<1
     m=(short>>5)&0x3f
     h=(short>>11)&0x1f
-    return "%02d:%02d.%02d" % (h,m,s)
+    return "%02d:%02d:%02d" % (h,m,s)
+
+# converts string to S3 time integer
+def strToTime(s):
+    h = int(s[0:2])>>1
+    m = int(s[3:5])
+    s = int(s[6:8])
+    return (h << 11) | (m << 5) | s
 
 # converts S3 date integer to string
 def dateToStr(short):
-    d=(short&0xf)
+    d=(short&0x1f)
     m=(short>>5)&0xf
-    y=((short>>9)&0xf)+80
-    return "%02d/%02d/%02d" % (d,m,y)
+    y=((short>>9)&0x7f)+1980
+    
+    return "%02d/%02d/%04d" % (d,m,y)
+
+# converts string to S3 date integer
+def strToDate(s):
+    d = int(s[0:2])
+    m = int(s[3:5])
+    y = int(s[6:10])-1980
+    return (y << 9) | (m << 5) | d
+
+# strips elements of path from whitespace
+def prettyPath(s):
+    return '\\'.join([i.strip() for i in s.split('\\')])

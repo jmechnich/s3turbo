@@ -1,8 +1,10 @@
 from s3sysex.Util import checksum, conv7_8, noop, convertToShort, convertToLong
-from s3sysex.Util import hexdump, timeToStr, dateToStr
+from s3sysex.Util import hexdump, timeToStr, dateToStr, prettyPath
 
 class MessagePrinter(object):
-    def __init__(self):
+    def __init__(self,debug=False):
+        self.debug = debug
+        
         self.handlers = {
             # FILE FUNCTIONS  FILE_F
             "F_DHDR"     : self.printFileDumpHeader,
@@ -99,15 +101,30 @@ class MessagePrinter(object):
             "info.DeviceRelease" : data[10],
             "info.FileType"      : data[11],
             "info.FileFormat"    : data[12],
+            "location"           : location,
         }
-        if prettyPrint:
-            print "%s %8d %s %s %2s %2s %2s" % (datadict["filename"].ljust(13),
-                                                datadict["info.Length"],
-                                                datadict["info.Date"],
-                                                datadict["info.Time"],
-                                                datadict["flags"],
-                                                datadict["info.FileType"],
-                                                datadict["info.FileFormat"])
+        if prettyPrint and not self.debug:
+            if datadict["filename"] == "="*11:
+                print "%13s %8s %10s %8s %2s %2s %2s %2s %2s %2s %s" % \
+                    ("Filename".center(13),
+                     "Size".center(8),
+                     "Date".center(8),
+                     "Time".center(8),
+                     "Fl", "Ty", "Fo", "Cl", "SC", "Re", "Path")
+                print "-"*80
+            else:
+                print "%13s %8d %10s %8s %2s %2s %2s %2s %2s %2s %s" % \
+                    (datadict["filename"].ljust(13),
+                     datadict["info.Length"],
+                     datadict["info.Date"],
+                     datadict["info.Time"],
+                     datadict["flags"],
+                     datadict["info.FileType"],
+                     datadict["info.FileFormat"],
+                     datadict["info.DeviceClass"],
+                     datadict["info.DeviceSubClass"],
+                     datadict["info.DeviceRelease"],
+                     repr(prettyPath(datadict["location"])))
         else:
             print "  Data:"
             for k,v in sorted(datadict.iteritems()):
@@ -127,7 +144,7 @@ class MessagePrinter(object):
         for i in xrange(noctets):
             #data += conv7_8(msg[offset:offset+8])
             offset += 8
-        if prettyPrint:
+        if prettyPrint and not self.debug:
             pass
         else:
             print "  Data:"

@@ -1,4 +1,4 @@
-from s3sysex.S3Turbo import S3Functions
+from s3sysex.S3Turbo import S3Functions, S3Exception
 
 # S3 message skeleton
 class MSCEIMessage(object):
@@ -12,8 +12,10 @@ class MSCEIMessage(object):
         subfunc = 0
         self.name = kwargs.get("fromName", None)
         if self.name:
-            func, subfunc, appendChecksum = S3Functions.get(self.name, (None, None))
-            if func is None: raise Exception("Unknown Command")
+            func, subfunc, appendChecksum = S3Functions.get(
+                self.name, (None, None,None))
+            if func is None:
+                raise S3Exception("Unknown Command '%s'" % self.name)
         
         self.magic    = kwargs.get("magic", 0xF0)
         self.vendor   = kwargs.get("vendor", 0x2F)
@@ -23,7 +25,9 @@ class MSCEIMessage(object):
         self.reqchan  = kwargs.get("reqchan", 0x0)
         self.data     = kwargs.get("data", data)
         self.term     = kwargs.get("term", 0xF7)
-        self.appendChecksum = True if kwargs.get("forceChecksum", False) else appendChecksum
+        self.appendChecksum = True \
+                              if kwargs.get("forceChecksum", False) \
+                              else appendChecksum
         
     def msg(self, time=0):
         return (time, self.raw())

@@ -5,7 +5,6 @@ S3Functions = {
     "F_DREQ"                 : (0x0, 0x03, True),  # FILE DUMP REQUEST
     "DIR_HDR"                : (0x0, 0x00, True),  # FILE DIRECTORY HEADER
     "DIR_DRQ"                : (0x0, 0x04, True),  # FILE DIRECTORY REQUEST
-    "F_ERR"                  : (0x0, 0x7B, False), # FILE ERROR
     # EDIT FUNCTIONS  EDIT_F
     "PAR_REQ"                : (0x2, 0x02, True),  # EDIT PARAMETER REQUEST
     "PAR_ASW"                : (0x2, 0x04, True),  # EDIT PARAMETER ANSWER
@@ -38,13 +37,14 @@ S3Functions = {
     "MESSAGEANSWER"          : (0x5, 0x14, False), # MESSAGE ANSWER
     "ENABLEEDITUPDATE"       : (0x5, 0x15, False), # ENABLE EDIT UPDATE
     "DISABLEEDITUPDATE"      : (0x5, 0x16, False), # DISABLE EDIT UPDATE
-    "D_ERR"                  : (0x5, 0x7B, False), # DEVICE ERROR
     "PUT_KEY"                : (0x5, 0x17, False), # WRITE KEY
     # EXTRA
-    "F_WAIT"                 : (0x0, 0x7C, False), # WAIT
-    "F_CANCEL"               : (0x0, 0x7D, False), # CANCEL
-    "F_NACK"                 : (0x0, 0x7E, False), # NACK
-    "F_ACK"                  : (0x0, 0x7F, False), # ACK
+    "F_ERR"                  : (0x0, 0x7B, False), # FILE ERROR
+    "F_WAIT"                 : (0x0, 0x7C, False), # FILE WAIT
+    "F_CANCEL"               : (0x0, 0x7D, False), # FILE CANCEL
+    "F_NACK"                 : (0x0, 0x7E, False), # FILE NACK
+    "F_ACK"                  : (0x0, 0x7F, False), # FILE ACK
+    "D_ERR"                  : (0x5, 0x7B, False), # DEVICE ERROR
     "D_WAIT"                 : (0x5, 0x7C, False), # DEVICE WAIT
     "D_CANCEL"               : (0x5, 0x7D, False), # DEVICE CANCEL
     "D_NACK"                 : (0x5, 0x7E, False), # DEVICE NACK
@@ -82,3 +82,8 @@ class S3HandshakeMessage(object):
     def Generate(function,chan,ownchan,command):
         fun, subfun = S3Functions[function]
         return [ 0xF0, 0x2F, fun << 4 | chan, subfun, command, ownchan, 0xF7 ]
+
+# main exception class
+class S3Exception(Exception):
+    def __init__(self,msg):
+        super(S3Exception,self).__init__(msg)

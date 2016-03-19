@@ -77,6 +77,7 @@ class MidiHandler(object):
             else:
                 print "Trying to send non-sysex message"
                 pass
+        #time.sleep(0.1)
         del MidiOut
         
     @staticmethod
@@ -129,15 +130,8 @@ class MidiHandler(object):
                         sysex = []
                         sysex_timestamp = None
                 else:
-                    for k,v in status_bytes.iteritems():
-                        if msgtype >> 4 == k:
-                            print "Received", v, ":", timestamp, [
-                                hex(b) for b in msg[0] ]
-                            break
-                    else:
-                        print "Received", timestamp, [
-                            hex(b) for b in msg[0] ]
                     recv_conn.send( (timestamp, msg[0]))
+        #time.sleep(0.1)
         del MidiIn
                     
     @staticmethod
@@ -152,14 +146,3 @@ class MidiHandler(object):
                 if (opened == 1): print "(opened)"
                 else: print "(unopened)"
         print
-
-status_bytes = {
-    0x8: "Note Off",
-    0x9: "Note On",
-    0xA: "Polyphonic Aftertouch",
-    0xB: "Controller",
-    0xC: "Program Change",
-    0xD: "Monophonic Aftertouch",
-    0xE: "Pitch Bend",
-    0xF: "System",
-}
