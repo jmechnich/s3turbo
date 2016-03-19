@@ -1,0 +1,69 @@
+#!/usr/bin/python
+
+import os
+import wave
+import threading
+import sys
+import time
+import pyaudio
+
+class WavePlayerLoop(threading.Thread) :
+    def __init__(self,filepath,loop=True,rate=None) :
+        super(WavePlayerLoop, self).__init__()
+        self.config = {}
+        with open(filepath,'r') as f:
+            for i in f.readlines():
+                k,v = i.split(':')
+                self.config[k] = v.strip()
+
+        self.filepath = os.path.join(
+            os.path.dirname(filepath),self.config['file_wav'])
+        if not rate is None: self.config['sample_rate'] = rate
+        self._stop = threading.Event()
+
+    def run(self):
+        wf     = wave.open(self.filepath, 'rb')
+        player = pyaudio.PyAudio()
+        
+        rate  = int(float(self.config.get('sample_rate',wf.getframerate())))
+        width = wf.getsampwidth()
+        
+        stream = player.open(
+            format = player.get_format_from_width(width),
+            channels = wf.getnchannels(),
+            rate = rate,
+            output = True)
+        
+        length = int(self.config['sample_length'])
+        start  = int(self.config['sample_loop_start'])*width
+        end    = (int(self.config['sample_loop_end'])-1)*width+1
+
+        data = wf.readframes(length)
+        stream.write(data)
+        while True:
+            stream.write(data[start:end])
+            if self.stopped(): break
+        
+        stream.close()
+        player.terminate()
+
+    def stop(self):
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.isSet()
+
+if __name__ == "__main__":
+    if len(sys.argv) == 1 or not os.path.exists(sys.argv[1]):
+        print "Usage: %s file [rate]" % os.path.basename(sys.argv[0])
+        sys.exit(1)
+
+    rate = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    
+    w = WavePlayerLoop(sys.argv[1],rate=rate)
+    w.start()
+    try:
+        while True: time.sleep(1)
+    except KeyboardInterrupt:
+        w.stop()
+        w.join()

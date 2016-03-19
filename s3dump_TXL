@@ -1,0 +1,36 @@
+#!/usr/bin/python
+
+import sys
+
+def xor(u16):
+    return 0x2000 ^ u16
+
+with open(sys.argv[1]) as f:
+    # check 6 byte signature and skip the following 16 bytes
+    sig = f.read(6)
+    if   sig == '\x01\x01\x01\x08\x02\01':
+        print >> sys.stderr, "Found signature type 1 (native?)"
+    elif sig == '\x01\x02\x01\x08\x02\01':
+        print >> sys.stderr, "Found signature type 2 (akai?)"
+    elif sig == '\x01\x02\x02\x08\x02\01':
+        print >> sys.stderr, "Found signature type 3 (wave?)"
+    else:
+        print >> sys.stderr, "Signature mismatch"
+        sys.exit(1)
+    skip=f.read(16)
+    if skip != '\x00' * 16:
+        print >> sys.stderr, "Skipped bytes contain non-zero data", repr(skip)
+
+    # read rest of file, do xor magic and scale to u16
+    tmp = f.read(2)
+    while len(tmp):
+        u16 = (ord(tmp[0]) << 8) | ord(tmp[1])
+        u16 = xor(u16)
+        u16 <<= 2
+        try:
+            sys.stdout.write(chr(u16>>8))
+            sys.stdout.write(chr(u16&0xff))
+        except IOError, e:
+            if    e.errno == 32: break
+            else: raise
+        tmp = f.read(2)
