@@ -6,6 +6,8 @@ from s3sysex.MidiHandler import MidiHandler
 from s3sysex.SysExParser import SysExParser
 from s3sysex.MSCEIMessage import MSCEIMessage
 from s3sysex.SampleDumpHandler import SampleDumpHandler
+from s3sysex.StandardHandler import StandardHandler
+from s3sysex.S3Turbo import S3Exception
 from s3sysex.Util import isSysEx, str2file, str2hex
 
 def main():
@@ -24,8 +26,6 @@ def main():
                         help='enable debug output')
     parser.add_argument('-x', '--exit', action='store_true',
                         help='exit after executing command')
-    parser.add_argument('--checksum', action='store_true',
-                        help='force appending checksum to command')
     parser.add_argument('--samples', nargs="+",
                         help='list of SDS files for sample upload')
     parser.add_argument('args', nargs='*',
@@ -69,8 +69,9 @@ def main():
                         cmdargs += a
                     else:
                         cmdargs.append(a)
-            parser.sendSysEx(MSCEIMessage(*cmdargs, fromName=args.command,
-                                          forceChecksum=args.checksum))
+            parser.sendSysEx(MSCEIMessage(*cmdargs, fromName=args.command))
+
+        standard_handler = StandardHandler(debug=args.debug)
 
         # poll for incoming messages
         currentHandler = None
@@ -80,7 +81,8 @@ def main():
                 if not len(msg):
                     continue
                 if not isSysEx(msg):
-                    continue
+                    if not standard_handler.handle(msg,timestamp): break
+                    else: continue
                 if msg[1] == 0x7E:
                     # SampleDumpHeader, SampleDumpDataPacket, SampleDumpRequest
                     if msg[3] in [ 0x1, 0x2, 0x3 ]:
@@ -104,14 +106,15 @@ def main():
                     if not parser.parse(msg, timestamp): break
             elif args.exit:
                 break
+        
     except EOFError, e:
         print "EOFError", e
         sys.exit(1)
     except KeyboardInterrupt:
         print
-    #except Exception, e:
-    #    print e
-    #    sys.exit(1)
+    except S3Exception, e:
+        print e
+        sys.exit(1)
     
 if __name__ == '__main__':
     main()
