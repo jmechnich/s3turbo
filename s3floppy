@@ -24,7 +24,11 @@ setup_floppy ()
 
 print_help ()
 {
-    echo "Usage: $(basename $0) {read,write} [file]"
+    echo "Usage: $(basename $0) {read,write,format} [file]"
+    echo
+    echo " For modes read and write, if no file is given on the commandline,"
+    echo " /dev/stdout and /dev/stdin will be used, respectively."
+    echo " For mode format, all other arguments will be ignored."
 }
 
 case "$1" in
