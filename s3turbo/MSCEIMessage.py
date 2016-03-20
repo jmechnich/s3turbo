@@ -8,8 +8,7 @@ class MSCEIMessage(object):
         if len(args):
             data += args
 
-        func = 0
-        subfunc = 0
+        func, subfunc, appendChecksum = 0, 0, False
         self.name = kwargs.get("fromName", None)
         if self.name:
             func, subfunc, appendChecksum = S3Functions.get(

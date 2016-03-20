@@ -70,6 +70,15 @@ def main():
                     else:
                         cmdargs.append(a)
             parser.sendSysEx(MSCEIMessage(*cmdargs, fromName=args.command))
+        elif len(args.args):
+            cmdargs = []
+            for a in args.args:
+                a = eval(a)
+                if type(a) == type(list()):
+                    cmdargs += a
+                else:
+                    cmdargs.append(a)
+            midi.send_conn.send( (0,cmdargs))
 
         standard_handler = StandardHandler(debug=args.debug)
 
