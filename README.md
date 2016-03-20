@@ -1,17 +1,20 @@
-# s3sysex
-MIDI System Exclusive interface for the General Music S3 Turbo synthesizer
+# s3turbo
+Tools for the General Music S2/S3 Turbo synthesizer, including
+* `s3midi`, a MIDI System Exclusive interface program
+* `s3img`, a program for handling floppy disk images
+* `s3floppy`, a program for formatting, reading and writing S2/S3 floppy disks
 
-## About
+## About s3midi
 The General Music/GEM S2/S3 Turbo Music Processor is a synthesizer workstation from the early 90s.  The Turbo version (larger ROM and updated functionality) has support for MIDI System Exclusive which is not well-documented.  The manual includes only a rudimentary description of the available commands and data structures but the C development files are not available.
 
 This tool provides an implementation of most of the commands from the manual.  It is also possible to send and receive sample dumps using SDS to the synthesizer (not tested with other instruments).
 
-## Functionality
-* Send commands to the synthesizer, see [s3sysex/S3Turbo.py](https://github.com/jmechnich/s3sysex/blob/master/s3sysex/S3Turbo.py)
+## Functionality of s3midi
+* Send commands to the synthesizer, see [s3sysex/S3Turbo.py](https://github.com/jmechnich/s3turbo/blob/master/s3sysex/S3Turbo.py)
 * Monitor MIDI messages and decode S2/S3 specific data
 * Send and receive sample dumps
 
-## Usage
+## Usage of s3midi
 
 The MIDI device numbers can be given on the command line using `--indev` and `--outdev`. `--listdev` lists all available MIDI devices. Defaults for command line arguments can be set using a configuration file `~/.s3sysex.conf`, e.g. containing:
 ```
@@ -101,7 +104,7 @@ File types:
  32 - Directory
 ```
 
-## Dumps
+### Dumps
 ```
 TYPE = [ 0x0, # Sound
          0x1, # Sample
@@ -168,7 +171,7 @@ or e.g.
 ./s3midi --command F_DREQ 'str2file("FIG_001 IMG")' 'str2hex("A:\\DATA\\HARDCPY\\")'
 ```
 
-## Formats
+### File formats
 
 ```
 # Sound map format, variable length
