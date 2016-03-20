@@ -1,0 +1,64 @@
+#!/bin/sh
+
+FLOPPY=/dev/fd0
+CYL=80
+SSIZE=1024
+SECT=10
+SIZE=$(($CYL*$SSIZE*$SECT*2))
+       
+check_bin ()
+{
+    if [ x"$(which $1)" = x ]; then
+        echo "$1 not found"
+        exit 1
+    fi
+}
+
+setup_floppy ()
+{
+    check_bin fdrawcmd
+    check_bin setfdprm
+    fdrawcmd dumpregs > /dev/null 2>&1
+    setfdprm -p "$FLOPPY" sect=$SECT hd ssize=$SSIZE cyl=$CYL
+}
+
+print_help ()
+{
+    echo "Usage: $(basename $0) {read,write} [file]"
+}
+
+case "$1" in
+    write)
+        shift
+        INPUT=/dev/stdin
+        if [ x"$1" != x ]; then
+            INPUT="$1"
+            TXTFILE=`echo "$1" | rev | cut -c 5- | rev`.txt
+            if [ -e "$TXTFILE" ]; then
+                uniq "$TXTFILE"
+            fi
+        fi
+        setup_floppy
+        dd if="$INPUT" bs=$SIZE count=1 of="$FLOPPY"
+        break
+        ;;
+    read)
+        shift
+        OUTPUT=/dev/stdout
+        if [ x"$1" != x ]; then
+            OUTPUT="$1"
+        fi
+        setup_floppy
+        dd of="$OUTPUT" bs=$SIZE count=1 if="$FLOPPY"
+        break
+        ;;
+    format)
+        check_bin superformat
+        superformat "$FLOPPY" sect=$SECT hd ssize=$SSIZE cyl=$CYL
+        break
+        ;;
+    *)
+        print_help
+        break
+        ;;
+esac
