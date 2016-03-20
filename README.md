@@ -216,6 +216,9 @@ or e.g.
 # Performance format, possibly constant length 252
  6 bytes header     01 02 02 03 02 01
  remaining unknown
+ 
+# Clipboard format, variable length
+ 6 bytes header     01 02 02 0a 02 01
 ```
 
 ### Sample format
