@@ -3,76 +3,113 @@
 import sys, os, argparse
 
 from s3sysex.S3FileReader import S3FileReader
+from s3sysex.S3FileWriter import S3FileWriter
 from s3sysex.S3Turbo import S3Exception
 
-parser = argparse.ArgumentParser(description='Process GEM S2/S3 image files')
-parser.add_argument('files', type=str, nargs='+',
-                   help='input files')
-parser.add_argument('--compatible', action='store_true',
-                    help='treat some errors as warnings')
-parser.add_argument('-c', '--contents', action='store_true',
-                    help='dump list of image contents')
-parser.add_argument('-d', '--dumpfile', metavar='FILE', type=str,
-                    help='dump FILE to stdout')
-parser.add_argument('-e', '--extract', metavar='DIR', type=str,
-                    help='extract image to DIR')
-parser.add_argument('-f', '--fat', action='store_true',
-                    help='dump FAT of image file')
-parser.add_argument('-l', '--log', metavar='FILE', type=str, nargs='?',
-                    const='log.txt',
-                    help='log problematic files to FILE')
-parser.add_argument('-p', '--props', action='store_true',
-                    help='dump image file properties')
-parser.add_argument('-v', '--verbose', action='store_true',
-                    help='print debugging information')
-
-args = parser.parse_args()
-
-if args.log: logfile = open(args.log,"w")
-
-exitstatus = 0
-for fn in args.files:
-    if not os.path.exists(fn):
-        print "Could not open file '%s'" % fn
-        continue
-    try:
-        actionTaken = False
-        sf = S3FileReader(fn,compatible=args.compatible,debug=args.verbose)
-        if args.dumpfile:
-            f = sf.findFile(args.dumpfile)
-            if not f:
-                print "Could not find '%s'" % args.dumpfile
-                continue
-            buf = sf.readFile(f)
-            sys.stdout.write(buf)
-            actionTaken = True
-        if args.contents:
-            sf.printContents()
-            actionTaken = True
-        if args.props:
-            sf.dumpProps()
-            actionTaken = True
-        if args.fat:
-            sf.dumpFAT()
-            actionTaken = True
-        if args.extract:
-            sf.extractAll(args.extract)
-            actionTaken = True
-        if not actionTaken:
-            sf.printContents()
-    except IOError, e:
-        if errno == 32: break
-        else: raise
-    except Exception, e:
-        print >> sys.stderr, fn
-        print >> sys.stderr, " ERROR:", e
-        if args.log:
-            print >> logfile, fn
-        else:
+def read(args):
+    if args.log: logfile = open(args.log,"w")
+    exitstatus = 0
+    for fn in args.files:
+        if not os.path.exists(fn):
+            print "Could not open file '%s'" % fn
             exitstatus = 1
-            break
+            continue
+        try:
+            executeDefault = True
+            sf = S3FileReader(fn,compatible=args.compatible,debug=args.verbose)
+            if args.dumpfile:
+                f = sf.findFile(args.dumpfile)
+                if not f:
+                    print "Could not find '%s'" % args.dumpfile
+                    continue
+                buf = sf.readFile(f)
+                sys.stdout.write(buf)
+                executeDefault = False
+            if args.contents:
+                sf.printContents()
+                executeDefault = False
+            if args.props:
+                sf.dumpProps()
+                executeDefault = False
+            if args.fat:
+                sf.dumpFAT()
+                executeDefault = False
+            if args.extract:
+                sf.extractAll(args.extract)
+                executeDefault = False
+            if executeDefault:
+                sf.printContents()
+        except IOError, e:
+            if errno == 32: break
+            else: raise
+        except Exception, e:
+            print >> sys.stderr, fn
+            print >> sys.stderr, " ERROR:", e
+            if args.log:
+                print >> logfile, fn
+            else:
+                exitstatus = 1
+                break
+    return exitstatus
 
-# close stdout and stderr manually in order to avoid error messages when piping
-sys.stderr.close()
-sys.stdout.close()
-sys.exit(exitstatus)
+def write(args):
+    exitstatus = 0
+    try:
+        sr = S3FileWriter(args.file)
+        if args.name:
+            sr.setVolumeName(args.name)
+        sr.write()
+    except Exception, e:
+        print >> sys.stderr, args.file
+        print >> sys.stderr, " ERROR:", e
+        exitstatus = 1
+    return exitstatus
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Process GEM S2/S3 image files')
+    subparsers = parser.add_subparsers(
+        help='sub-command help')
+    readparser = subparsers.add_parser(
+        'read',
+        description='Read GEM S2/S3 image files')
+    readparser.add_argument('files', type=str, nargs='+',
+                            help='input files')
+    readparser.add_argument('--compatible', action='store_true',
+                            help='treat some errors as warnings')
+    readparser.add_argument('-c', '--contents', action='store_true',
+                            help='dump list of image contents')
+    readparser.add_argument('-d', '--dumpfile', metavar='FILE', type=str,
+                            help='dump FILE to stdout')
+    readparser.add_argument('-e', '--extract', metavar='DIR', type=str,
+                            help='extract image to DIR')
+    readparser.add_argument('-f', '--fat', action='store_true',
+                            help='dump FAT of image file')
+    readparser.add_argument('-l', '--log', metavar='FILE', type=str, nargs='?',
+                            const='log.txt',
+                            help='log problematic files to FILE')
+    readparser.add_argument('-p', '--props', action='store_true',
+                            help='dump image file properties')
+    readparser.add_argument('-v', '--verbose', action='store_true',
+                            help='print debugging information')
+    readparser.set_defaults(func=read)
+
+    writeparser = subparsers.add_parser(
+        'write',
+        description='Write GEM S2/S3 image files')
+    writeparser.add_argument('file', type=str, help='output file')
+    writeparser.add_argument('-n', '--name', type=str,
+                             help='set volume name')
+    writeparser.set_defaults(func=write)
+    
+    args = parser.parse_args()
+    exitstatus = args.func(args)
+
+    # close stdout and stderr manually in order to avoid error messages
+    # when piping
+    sys.stderr.close()
+    sys.stdout.close()
+    sys.exit(exitstatus)
+
+if __name__ == "__main__":
+    main()
