@@ -93,9 +93,9 @@ def timeToStr(short):
 
 # converts string to S3 time integer
 def strToTime(s):
-    h = int(s[0:2])>>1
+    h = int(s[0:2])
     m = int(s[3:5])
-    s = int(s[6:8])
+    s = int(s[6:8])>>1
     return (h << 11) | (m << 5) | s
 
 # converts S3 date integer to string
