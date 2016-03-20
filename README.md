@@ -72,8 +72,10 @@ A:-|
    |
    |-DATA                  (type 32, format 32)
    | :_(e.g. screenshot from hardcopy program in HARDCPY/FIG_001 IMG)
+   | :_(e.g. text file from disk directory program in DISKNAMEALL/LIB/DIR etc.)
    |
    |-PROGRAM               (type 32, format 32)
+   | :_(e.g. temporary files from disk copy program)
    |
    |-SETUP                 (type 32, format 32)
      |-GENERAL             (type  5, format  2)
