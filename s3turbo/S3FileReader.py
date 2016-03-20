@@ -1,7 +1,7 @@
 import os
 
-from s3sysex.Util import dateToStr, timeToStr
-from s3sysex.S3Turbo import S3Exception
+from s3turbo.Util import dateToStr, timeToStr
+from s3turbo.S3Turbo import S3Exception
 
 class S3FileReader(object):
     def __init__(self,filename,compatible=False,debug=False):

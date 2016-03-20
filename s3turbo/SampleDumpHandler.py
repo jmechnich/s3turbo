@@ -1,7 +1,7 @@
 import time, os
 from progress.bar import IncrementalBar
 
-from s3sysex.Util import checksum, u2s, writeWAV
+from s3turbo.Util import checksum, u2s, writeWAV
 
 class HandshakeMessage(object):
     @staticmethod

@@ -1,4 +1,4 @@
-from s3sysex.S3Turbo import S3Functions, S3Exception
+from s3turbo.S3Turbo import S3Functions, S3Exception
 
 # S3 message skeleton
 class MSCEIMessage(object):

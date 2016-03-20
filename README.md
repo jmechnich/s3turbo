@@ -10,13 +10,13 @@ The General Music/GEM S2/S3 Turbo Music Processor is a synthesizer workstation f
 This tool provides an implementation of most of the commands from the manual.  It is also possible to send and receive sample dumps using SDS to the synthesizer (not tested with other instruments).
 
 ## Functionality of s3midi
-* Send commands to the synthesizer, see [s3sysex/S3Turbo.py](https://github.com/jmechnich/s3turbo/blob/master/s3sysex/S3Turbo.py)
+* Send commands to the synthesizer, see [s3turbo/S3Turbo.py](https://github.com/jmechnich/s3turbo/blob/master/s3turbo/S3Turbo.py)
 * Monitor MIDI messages and decode S2/S3 specific data
 * Send and receive sample dumps
 
 ## Usage of s3midi
 
-The MIDI device numbers can be given on the command line using `--indev` and `--outdev`. `--listdev` lists all available MIDI devices. Defaults for command line arguments can be set using a configuration file `~/.s3sysex.conf`, e.g. containing:
+The MIDI device numbers can be given on the command line using `--indev` and `--outdev`. `--listdev` lists all available MIDI devices. Defaults for command line arguments can be set using a configuration file `~/.s3turbo.conf`, e.g. containing:
 ```
 indev:  2
 outdev: 3

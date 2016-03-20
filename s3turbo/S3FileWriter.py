@@ -1,6 +1,6 @@
 import cStringIO, time
 
-from s3sysex.Util import strToDate, strToTime
+from s3turbo.Util import strToDate, strToTime
 
 class S3FileWriter(object):
     def __init__(self,filename):

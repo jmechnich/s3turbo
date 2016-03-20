@@ -2,9 +2,9 @@
 
 import sys, os, argparse
 
-from s3sysex.S3FileReader import S3FileReader
-from s3sysex.S3FileWriter import S3FileWriter
-from s3sysex.S3Turbo import S3Exception
+from s3turbo.S3FileReader import S3FileReader
+from s3turbo.S3FileWriter import S3FileWriter
+from s3turbo.S3Turbo import S3Exception
 
 def read(args):
     if args.log: logfile = open(args.log,"w")

@@ -1,11 +1,11 @@
 import time
 from progress.bar import IncrementalBar
 
-from s3sysex.MessagePrinter import MessagePrinter
-from s3sysex.MSCEIMessage   import MSCEIMessage
-from s3sysex.S3Turbo        import S3FunctionName
-from s3sysex.Util           import checksum, conv7_8, noop, cancel, hexdump
-from s3sysex.Util           import convertToLong
+from s3turbo.MessagePrinter import MessagePrinter
+from s3turbo.MSCEIMessage   import MSCEIMessage
+from s3turbo.S3Turbo        import S3FunctionName
+from s3turbo.Util           import checksum, conv7_8, noop, cancel, hexdump
+from s3turbo.Util           import convertToLong
 
 class SysExParser(object):
     def __init__(self,send_conn,debug=False):

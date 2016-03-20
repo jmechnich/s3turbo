@@ -1,5 +1,5 @@
-from s3sysex.Util import checksum, conv7_8, noop, convertToShort, convertToLong
-from s3sysex.Util import hexdump, timeToStr, dateToStr, prettyPath
+from s3turbo.Util import checksum, conv7_8, noop, convertToShort, convertToLong
+from s3turbo.Util import hexdump, timeToStr, dateToStr, prettyPath
 
 class MessagePrinter(object):
     def __init__(self,debug=False):
