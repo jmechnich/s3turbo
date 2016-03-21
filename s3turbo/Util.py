@@ -116,3 +116,11 @@ def strToDate(s):
 # strips elements of path from whitespace
 def prettyPath(s):
     return '\\'.join([i.strip() for i in s.split('\\')])
+
+# decode path from latin1 and replace invalid characters
+def decodePath(s):
+    return s.decode('latin1').replace('/','@')
+
+# encode path to latin1 etc
+def encodePath(s):
+    return s.replace('@','/').decode('utf-8').encode('latin1')

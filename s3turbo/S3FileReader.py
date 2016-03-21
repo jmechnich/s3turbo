@@ -1,6 +1,6 @@
 import os
 
-from s3turbo.Util import dateToStr, timeToStr
+from s3turbo.Util import dateToStr, timeToStr, decodePath, encodePath
 from s3turbo.S3Turbo import S3Exception
 
 class S3FileReader(object):
@@ -9,15 +9,6 @@ class S3FileReader(object):
         self.compatible = compatible
         self.debug      = debug
         
-        self.subst = [
-            ('\xc4','D'), # sound patch RAM
-            ('\xc5','E'), # RAM samples used
-            ('\xc6','F'), # normal RAM
-            ('\xc8','!'), # copy protection (?)
-            ('\xc9','@'), # copy protection (?)
-            ('/','\\'),
-        ]
-
         self.file     = None
         if os.path.exists(filename):
             self.file     = open(filename,'rb')
@@ -199,9 +190,10 @@ class S3FileReader(object):
         return self.start_cluster+self.clustersize*(cluster-2)
     
     def printDirEntry(self,de,indent=0):
+        name = decodePath(de.shortname+de.shortext)
         print '%s%-14s %8d %s %s  %2x %7d (0x%x)' % (
-            indent*' ', de.shortname+de.shortext, de.size, timeToStr(de.mtime),
-            dateToStr(de.mdate),de.attr,de.start,self.clusterToOffset(de.start))
+            indent*' ', name, de.size, timeToStr(de.mtime), dateToStr(de.mdate),
+            de.attr,de.start,self.clusterToOffset(de.start))
 
     def printContents(self,start=None,path='A:'):
         if start is None:
@@ -240,6 +232,7 @@ class S3FileReader(object):
                 print "%-20s: %s" % (k,repr(str(bytearray(v))))
 
     def findFile(self,path):
+        path = encodePath(path)
         segments = path.split('\\')
         if len(segments) and  segments[0] == 'A:':
             segments = segments[1:]
@@ -312,11 +305,7 @@ class S3FileReader(object):
         dirs, files = [], []
         self.readDirectory(dirlist=dirs,filelist=files,cluster=cluster)
         for f in files:
-            fname = (f.shortname+f.shortext).strip()
-            # replace special characters in filename
-            for before, after in self.subst:
-                fname = fname.replace(before,after)
-
+            fname = decodePath(f.shortname+f.shortext).strip()
             outname = os.path.join(targetdir,fname)
             try:
                 #if os.path.exists(outname):
@@ -331,9 +320,6 @@ class S3FileReader(object):
                 if self.compatible: print "WARNING:", s
                 else:               raise S3Exception(s)
         for d in dirs:
-            dirname = (d.shortname+d.shortext).strip()
-            # replace special characters in dirname
-            for before, after in self.subst:
-                dirname = dirname.replace(before,after)
+            dirname = decodePath(d.shortname+d.shortext).strip()
             if dirname in ['.','..']: continue
             self.extractAll(os.path.join(targetdir,dirname),cluster=d.start)
