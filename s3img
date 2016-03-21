@@ -40,15 +40,16 @@ def read(args):
             if executeDefault:
                 sf.printContents()
         except IOError, e:
+            exitstatus = 1
             if errno == 32: break
             else: raise
         except Exception, e:
+            exitstatus = 1
             print >> sys.stderr, fn
             print >> sys.stderr, " ERROR:", e
             if args.log:
                 print >> logfile, fn
-            else:
-                exitstatus = 1
+            if not args.keep_going:
                 break
     return exitstatus
 
@@ -85,6 +86,8 @@ def main():
                             help='extract image to DIR')
     readparser.add_argument('-f', '--fat', action='store_true',
                             help='dump FAT of image file')
+    readparser.add_argument('-k', '--keep-going', action='store_true',
+                            help='continue processing files on error')
     readparser.add_argument('-l', '--log', metavar='FILE', type=str, nargs='?',
                             const='log.txt',
                             help='log problematic files to FILE')
