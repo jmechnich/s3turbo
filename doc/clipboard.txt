@@ -1,0 +1,48 @@
+Page            Size    Subdirectory of A:\SETUP\CLIPBOARD
+================================================================================
+
+Perf. Tracks
+Page 1          16      0104    # Configuration
+Page 2          12      0106    # Common
+Page 3          16      0109    # Local
+Page 4          16      0105    # Internal sound
+Page 5/6        16      01aa    # Midi filter in/out
+
+Perf. Contr.
+Page 1          44      060001  # Effects
+Page 2          16      0602    # Controllers
+Page 3          36      0603    # User keys
+Page 4          20      0604    # User sliders
+
+Sound
+Page 1          22/28   0301    # Waveset
+Page 2-1        28      030203  # Volume
+Page 2-2        40      030303  # Volume tracking
+Page 3-1        12      0304    # Amplitude envelope control
+Page 3-2        28      0306    # Amplitude key on
+Page 3-3        28      0307    # Amplitude key off
+Page 3-4        24      0305    # Amplitude tracking
+Page 4          36      030808  # LFO
+Page 5-1/2      16      03`a    # Filter 1+2
+Page 5-3/4      24      03`e    # Filter 1+2 tracking
+Page 6-1         8      0313    # Filter envelope control
+Page 6-2        12/28   03`c    # Filter key on
+Page 6-3        28      03`d    # Filter key off
+Page 6-4        24      03`b    # Filter tracking
+Page 7-1/2              03`c    # Pitch envelope control / key on
+Page 7-3                03`d    # Pitch key off
+Page 7-4                03`b    # Pitch tracking
+Page 8-1        12      0321    # Pan envelope control
+Page 8-2                03`c    # Pan envelope key on
+Page 8-3                03`d    # Pan envelope key off
+Page 8-4                03`b    # Pan envelope tracking
+
+Effect
+Page 1 (edit)    40     090405  # Edit effect 1
+Page 2 (edit)    40     090607  # Edit effect 2
+
+Seen on disks: 0308 (20), 03bg (16), 03bh (24), 03ee (28), 03ef (28), 03eg (24)
+
+Sizes might differ between software revisions
+
+All files have the same 6-byte header: 01 02 02 0a 02 01
