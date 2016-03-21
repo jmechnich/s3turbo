@@ -22,14 +22,26 @@ def main():
                         help='list MIDI devices and exit')
     parser.add_argument('-c', '--command', type=str, action='store',
                         help='send MIDI command')
-    parser.add_argument('-d', '--debug', action='store_true',
-                        help='enable debug output')
-    parser.add_argument('-x', '--exit', action='store_true',
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='enable verbose output')
+    parser.add_argument('-e', '--exit', action='store_true',
                         help='exit after executing command')
     parser.add_argument('--samples', nargs="+",
                         help='list of SDS files for sample upload')
-    parser.add_argument('args', nargs='*',
-                        help='command arguments')
+    parser.add_argument('-f', '--file', type=str2file, action='append',
+                        dest='payload', metavar="FILE",
+                        help='add filename to payload' +
+                        '(will be whitespace-filled to 11 characters length)')
+    parser.add_argument('-p', '--path', type=str2hex, action='append',
+                        dest='payload', metavar='PATH',
+                        help='add path to payload' +
+                        '(will be 0-terminated, max 80 chars)')
+    parser.add_argument('-d', '--int', type=int, action='append',
+                        dest='payload', nargs='+', metavar='NUMBER',
+                        help='add integer to payload')
+    parser.add_argument('-x', '--hex', type=lambda x: int(x, 16), nargs='+',
+                        action='append', dest='payload', metavar='HEXNUMBER',
+                        help='add hexadecimal integer to payload')
 
     # set defaults from configuration file
     confargs = {}
@@ -40,7 +52,14 @@ def main():
             confargs[k] = v
     parser.set_defaults(**confargs)
     args = parser.parse_args()
-
+    payload = []
+    if args.payload:
+        for i in args.payload:
+            if type(i) == type(list()):
+                payload += i
+            else:
+                payload.append(i)
+    
     try:
         # list MIDI devices and exit
         if args.listdev:
@@ -55,32 +74,17 @@ def main():
            [ 0xf8 ], # midi clock
         ]
         midi = MidiHandler(indev=args.indev, outdev=args.outdev,
-                           msgfilter=filter, debug=args.debug)
+                           msgfilter=filter, debug=args.verbose)
         midi.start()
 
         # SysExParser
-        parser = SysExParser(send_conn=midi.send_conn,debug=args.debug)
+        parser = SysExParser(send_conn=midi.send_conn,debug=args.verbose)
         if args.command:
-            cmdargs = []
-            if len(args.args):
-                for a in args.args:
-                    a = eval(a)
-                    if type(a) == type(list()):
-                        cmdargs += a
-                    else:
-                        cmdargs.append(a)
-            parser.sendSysEx(MSCEIMessage(*cmdargs, fromName=args.command))
+            parser.sendSysEx(MSCEIMessage(*payload, fromName=args.command))
         elif len(args.args):
-            cmdargs = []
-            for a in args.args:
-                a = eval(a)
-                if type(a) == type(list()):
-                    cmdargs += a
-                else:
-                    cmdargs.append(a)
-            midi.send_conn.send( (0,cmdargs))
+            midi.send_conn.send( (0,payload))
 
-        standard_handler = StandardHandler(debug=args.debug)
+        standard_handler = StandardHandler(debug=args.verbose)
 
         # poll for incoming messages
         currentHandler = None
@@ -97,7 +101,7 @@ def main():
                     if msg[3] in [ 0x1, 0x2, 0x3 ]:
                         if not currentHandler:
                             currentHandler = SampleDumpHandler(
-                                debug=args.debug,samplelist=args.samples)
+                                debug=args.verbose,samplelist=args.samples)
                         midi.send_conn.send((0,currentHandler.parse(msg)))
                     # WAIT
                     elif msg[3] == 0x7C:
