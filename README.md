@@ -225,7 +225,7 @@ or e.g.
 The S2/S3 exports 14-bit encoded mono samples. When receiving a sample dump, the program creates the following files:
 * sample_TIMESTAMP.sds: original stream of MIDI messages
 * sample_TIMESTAMP.txt: sample information (loops, samplerate, etc)
-* sample_TIMESTAMP.dmp: sample data dump (7-in-8-bit chunks)
+* sample_TIMESTAMP.dmp: sample data dump (7-in-8-bit chunks, big-endian: .dcba987 .6543210)
 * sample_TIMESTAMP.wav: PCM sample data (s16le mono)
 
 ## Dependencies

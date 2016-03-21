@@ -204,7 +204,7 @@ class SampleDumpHandler(object):
         nsamples = int(self.header.get('sample_length',len(self.data)/2))
         self.data = self.data[:nsamples*2]
         
-        # sample data only (2x 7-bit chunks)
+        # sample data only (7-in-8-bit chunks, big-endian: .dcba987 .6543210)
         with open(filename+".dmp", "wb") as f:
             f.write(bytearray(self.data))
 
