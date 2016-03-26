@@ -124,3 +124,10 @@ def decodePath(s):
 # encode path to latin1 etc
 def encodePath(s):
     return s.replace('@','/').decode('utf-8').encode('latin1')
+
+def makeTimes(d,t):
+    import time, calendar
+    ds = dateToStr(d)
+    ts = timeToStr(t)
+    t = time.mktime(time.strptime("%s %s" % (ds,ts),"%d/%m/%Y %H:%M:%S"))
+    return (t,t)

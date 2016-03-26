@@ -2,8 +2,7 @@
 
 import sys, os, argparse
 
-from s3turbo.S3FileReader import S3FileReader
-from s3turbo.S3FileWriter import S3FileWriter
+from s3turbo.S3Image import S3Image
 from s3turbo.S3Turbo import S3Exception
 
 def read(args):
@@ -16,7 +15,8 @@ def read(args):
             continue
         try:
             executeDefault = True
-            sf = S3FileReader(fn,compatible=args.compatible,debug=args.verbose)
+            sf = S3Image(compatibilityMode=args.compatible,debug=args.verbose)
+            sf.readFromFile(fn)
             if args.dumpfile:
                 f = sf.findFile(args.dumpfile)
                 if not f:
@@ -40,10 +40,12 @@ def read(args):
             if executeDefault:
                 sf.printContents()
         except IOError, e:
+            if args.verbose: raise
             exitstatus = 1
             if errno == 32: break
             else: raise
         except Exception, e:
+            if args.verbose: raise
             exitstatus = 1
             print >> sys.stderr, fn
             print >> sys.stderr, " ERROR:", e
@@ -56,11 +58,14 @@ def read(args):
 def write(args):
     exitstatus = 0
     try:
-        sr = S3FileWriter(args.file)
-        if args.name:
-            sr.setVolumeName(args.name)
-        sr.write()
+        sr = S3Image(compatibilityMode=args.compatible,debug=args.verbose)
+        sr.createEmpty()
+        if args.name: sr.setVolumeName(args.name)
+        sr.setVolumeDate()
+        sr.setVolumeTime()
+        sr.writeToFile(args.file)
     except Exception, e:
+        if args.verbose: raise
         print >> sys.stderr, args.file
         print >> sys.stderr, " ERROR:", e
         exitstatus = 1
@@ -101,8 +106,12 @@ def main():
         'write',
         description='Write GEM S2/S3 image files')
     writeparser.add_argument('file', type=str, help='output file')
+    writeparser.add_argument('--compatible', action='store_true',
+                             help='treat some errors as warnings')
     writeparser.add_argument('-n', '--name', type=str,
                              help='set volume name')
+    writeparser.add_argument('-v', '--verbose', action='store_true',
+                             help='print debugging information')
     writeparser.set_defaults(func=write)
     
     args = parser.parse_args()
