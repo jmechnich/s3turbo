@@ -177,6 +177,22 @@ or e.g.
 ### File formats
 
 ```
+# User program format, variable length
+ 6 bytes header     01 01 01 0b 02 01
+ see doc/format_userprogram.txt
+ 
+# Performance format, possibly constant length 252
+ 6 bytes header     01 02 02 03 02 01
+ remaining unknown
+ 
+# General format, possibly constant length 1127
+ 6 bytes header     01 02 02 05 02 01
+ remaining unknown
+
+# Effect2 map format, variable length
+ 6 bytes header     01 02 02 07 02 01
+34 bytes map entry, see Effect 1 map
+
 # Sound map format, variable length
  6 bytes header     01 02 02 09 02 02
 18 bytes map entry
@@ -206,18 +222,6 @@ or e.g.
    bytes 31-32      Effect param 4
    byte  33-34      Effect param 5
 
-# Effect2 map format, variable length
- 6 bytes header     01 02 02 07 02 01
-34 bytes map entry, see Effect 1 map
-
-# General format, possibly constant length 1127
- 6 bytes header     01 02 02 05 02 01
- remaining unknown
-
-# Performance format, possibly constant length 252
- 6 bytes header     01 02 02 03 02 01
- remaining unknown
- 
 # Clipboard format, variable length
  6 bytes header     01 02 02 0a 02 01
 ```

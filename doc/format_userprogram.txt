@@ -1,0 +1,24 @@
+COPY_PRGPRG:  9948 bytes
+DISK_DIRPRG: 14200 bytes
+HARDCPY PRG:  9096 bytes
+LOADER  LOD:  2664 bytes
+
+ 6 bytes header     01 01 01 0b 02 01
+ 6 bytes            00 00 00 00 00 00
+ 2 bytes            unknown
+                    COPY_PRGPRG: 0c fc
+                    DISK_DIRPRG: 17 98
+                    HARDCPY PRG: 08 de
+                    LOADER  LOD: 02 8c
+ 2 bytes            00 00
+ 2 bytes            unknown
+                    COPY_PRGPRG: 26 a0
+                    DISK_DIRPRG: 37 22
+                    HARDCPY PRG: 23 40
+                    LOADER  LOD: 08 de
+
+ST      PRG: 61204 bytes
+ 6 bytes header     01 01 01 0b 02 01
+ 2 bytes            00 1e
+ 2 bytes            00 00
+ 2 bytes            00 1e
