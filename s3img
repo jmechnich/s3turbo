@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import sys, os, argparse
 
 from s3turbo.S3Image import S3Image
@@ -8,49 +10,46 @@ from s3turbo.S3Turbo import S3Exception
 def read(args):
     if args.log: logfile = open(args.log,"w")
     exitstatus = 0
-    for fn in args.files:
+    for fn in args.input_files:
         if not os.path.exists(fn):
-            print "Could not open file '%s'" % fn
+            print("Could not open file '%s'" % fn)
             exitstatus = 1
             continue
         try:
-            executeDefault = True
-            sf = S3Image(compatibilityMode=args.compatible,debug=args.verbose)
-            sf.readFromFile(fn)
+            sf = S3Image(debug=args.verbose)
+            sf.read_from_file(fn,compatibilityMode=args.compatible)
             if args.dumpfile:
-                f = sf.findFile(args.dumpfile)
+                f = sf.find_file(args.dumpfile)
                 if not f:
-                    print "Could not find '%s'" % args.dumpfile
+                    print("Could not find '%s'" % args.dumpfile)
                     continue
-                buf = sf.readFile(f)
+                buf = sf.read_file(f)
                 sys.stdout.write(buf)
-                executeDefault = False
             if args.contents:
-                sf.printContents()
-                executeDefault = False
+                sf.dump_contents()
             if args.props:
-                sf.dumpProps()
-                executeDefault = False
+                sf.dump_props()
             if args.fat:
-                sf.dumpFAT()
-                executeDefault = False
+                sf.dump_fat()
+            if args.test:
+                sf.test_file(fn)
             if args.extract:
-                sf.extractAll(args.extract)
-                executeDefault = False
-            if executeDefault:
-                sf.printContents()
+                sf.extract_all(args.extract,compatibilityMode=args.compatible)
         except IOError, e:
-            if args.verbose: raise
+            if args.backtrace:
+                print("Error in %s:" % repr(fn))
+                raise
             exitstatus = 1
             if errno == 32: break
             else: raise
         except Exception, e:
-            if args.verbose: raise
+            if args.backtrace:
+                print("ERROR in %s:" % repr(fn))
+                raise
             exitstatus = 1
-            print >> sys.stderr, fn
-            print >> sys.stderr, " ERROR:", e
+            print("ERROR in %s:\n %s" % (repr(fn),str(e)), file=sys.stderr)
             if args.log:
-                print >> logfile, fn
+                print(fn,file=logfile)
             if not args.keep_going:
                 break
     return exitstatus
@@ -58,17 +57,19 @@ def read(args):
 def write(args):
     exitstatus = 0
     try:
-        sr = S3Image(compatibilityMode=args.compatible,debug=args.verbose)
-        sr.createEmpty()
-        if args.name: sr.setVolumeName(args.name)
-        sr.setVolumeDate()
-        sr.setVolumeTime()
-        sr.writeToFile(args.file)
+        sr = S3Image(debug=args.verbose)
+        if args.name: sr.set_volname(args.name)
+        if args.file: sr.read_from_file(args.file)
+        else:
+            sr.set_voldate()
+            sr.set_voltime()
+        sr.write_to_file(args.output_file)
     except Exception, e:
-        if args.verbose: raise
-        print >> sys.stderr, args.file
-        print >> sys.stderr, " ERROR:", e
+        if args.backtrace:
+            print("ERROR in %s:" % repr(args.file))
+            raise
         exitstatus = 1
+        print("ERROR in %s:\n %s" % (repr(args.file),str(e)), file=sys.stderr)
     return exitstatus
 
 def main():
@@ -79,10 +80,12 @@ def main():
     readparser = subparsers.add_parser(
         'read',
         description='Read GEM S2/S3 image files')
-    readparser.add_argument('files', type=str, nargs='+',
+    readparser.add_argument('input_files', type=str, nargs='+',
                             help='input files')
     readparser.add_argument('--compatible', action='store_true',
                             help='treat some errors as warnings')
+    readparser.add_argument('-b', '--backtrace', action='store_true',
+                            help='print backtrace instead of error message')
     readparser.add_argument('-c', '--contents', action='store_true',
                             help='dump list of image contents')
     readparser.add_argument('-d', '--dumpfile', metavar='FILE', type=str,
@@ -98,6 +101,8 @@ def main():
                             help='log problematic files to FILE')
     readparser.add_argument('-p', '--props', action='store_true',
                             help='dump image file properties')
+    readparser.add_argument('-t', '--test', action='store_true',
+                            help='test input file')
     readparser.add_argument('-v', '--verbose', action='store_true',
                             help='print debugging information')
     readparser.set_defaults(func=read)
@@ -105,11 +110,15 @@ def main():
     writeparser = subparsers.add_parser(
         'write',
         description='Write GEM S2/S3 image files')
-    writeparser.add_argument('file', type=str, help='output file')
+    writeparser.add_argument('output_file', type=str, help='output file')
     writeparser.add_argument('--compatible', action='store_true',
                              help='treat some errors as warnings')
+    writeparser.add_argument('-b', '--backtrace', action='store_true',
+                             help='print backtrace instead of error message')
     writeparser.add_argument('-n', '--name', type=str,
                              help='set volume name')
+    writeparser.add_argument('-f', '--file', type=str,
+                             help='read input file')
     writeparser.add_argument('-v', '--verbose', action='store_true',
                              help='print debugging information')
     writeparser.set_defaults(func=write)

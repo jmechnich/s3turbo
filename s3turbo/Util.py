@@ -131,3 +131,25 @@ def makeTimes(d,t):
     ts = timeToStr(t)
     t = time.mktime(time.strptime("%s %s" % (ds,ts),"%d/%m/%Y %H:%M:%S"))
     return (t,t)
+
+class ConversionHandler(object):
+    def __init__(self,format,length,default=None):
+        self.format  = format
+        self.length  = length
+        self.default = default
+
+    def read(self,data):
+        import struct
+        if type(data) == type(str()): s = data
+        else: s = data.read(self.length)
+        return struct.unpack(self.format,s)[0]
+    
+    def write(self,value):
+        import struct
+        return struct.pack(self.format,value)
+
+def CharHandler(default):
+    return ConversionHandler('%ds' % len(default),len(default),default)
+def ByteHandler(default): return ConversionHandler('<B',1,default)
+def WordHandler(default): return ConversionHandler('<H',2,default)
+def LongHandler(default): return ConversionHandler('<I',4,default)
