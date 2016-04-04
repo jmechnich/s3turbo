@@ -16,12 +16,12 @@ This tool provides an implementation of most of the commands from the manual.  I
 
 ## Usage of s3midi
 
-The MIDI device numbers can be given on the command line using `--indev` and `--outdev`. `--listdev` lists all available MIDI devices. Defaults for command line arguments can be set using a configuration file `~/.s3turbo.conf`, e.g. containing:
+The MIDI device numbers can be given on the command line using `-i/--indev` and `-o/--outdev`. `-l/--listdev` lists all available MIDI devices. Defaults for command line arguments can be set using a configuration file `~/.s3turbo.conf`, e.g. containing:
 ```
 indev:  2
 outdev: 3
 ```
-Sending a basic status request to the synthesizer. The `--exit` flag causes the program to terminate after one second of inactivity from the synthesizer.
+Sending a basic status request to the synthesizer. The `-e/--exit` flag causes the program to terminate after one second of inactivity from the synthesizer.
 ```
 ./s3midi --command STAT_REQUEST
   Data:
@@ -39,13 +39,13 @@ Sending a basic status request to the synthesizer. The `--exit` flag causes the 
 Change to Bank 1, Performance 1 and print debugging information. Additional command line arguments are appended to the message body.
 ```
 # Bank and Performance values in ASCII (0x30-0x39)
-./s3midi --verbose --command BANK_PERF_CHG -x 0x30 0x30 --exit
+./s3midi -v -cBANK_PERF_CHG -x 0x30 0x30 -e
 ```
 
 Send a directory request to the synthesizer. The order of commandline arguments has to match the signature of the command.
 ```
 # List everything
-./s3midi --command DIR_DRQ -f"*" -p"A:"
+./s3midi -cDIR_DRQ -f"*" -p"A:"
 ```
 
 The first argument is the filename, second is the path.
@@ -125,53 +125,57 @@ BANK = ASCII Bank number (0x30-0x39), only used for TYPE 0x6, 0x7
 PERF = ASCII Performance number (0x30-0x39), only used for TYPE 0x7
 
 # List directory contents
-./s3midi --command DIR_REQUEST -x $TYPE $BANK $PERF -f"*"
+./s3midi -cDIR_REQUEST -x $TYPE $BANK $PERF -f"*"
 
 # Dump 'file'
-./s3midi --command DATA_REQUEST -x $TYPE $BANK $PERF -f"*")'
+./s3midi -cDATA_REQUEST -x $TYPE $BANK $PERF -f"*")'
 
 # Dump Sound ("SOUND     E" from DIR_REQUEST)
 # F_DREQ does not seem to work at all
-./s3midi --command DATA_REQUEST -x 0 0 0 -f"SOUND     E"
+./s3midi -cDATA_REQUEST -x 0 0 0 -f"SOUND     E"
 
 # Dump Sample ("SAMPLE  TXL" from DIR_REQUEST)
 # F_DREQ only dumps a few bytes if dumping from RAM but seems to work for RAM disk (e.g. C:)
-./s3midi --command DATA_REQUEST -x 1 0 0 -f"SAMPLE  TXL"
+./s3midi -cDATA_REQUEST -x 1 0 0 -f"SAMPLE  TXL"
 or
-./s3midi --command F_DREQ -f"SAMPLE  TXL" -p"A:\\SETUP\\SAMPLES\\"
+./s3midi -cF_DREQ -f"SAMPLE  TXL" -p"A:\\SETUP\\SAMPLES\\"
 
 # Dump SOUNDMAP (filename argument ignored)
-./s3midi --command DATA_REQUEST -x 2 0 0 -f"*"
+./s3midi -cDATA_REQUEST -x 2 0 0 -f"*"
 or
-./s3midi --command F_DREQ -f"SOUNDMAP" -p"A:\\SETUP\\"
+./s3midi -cF_DREQ -f"SOUNDMAP" -p"A:\\SETUP\\"
 
 # Dump EFFECT1 (filename argument ignored)
-./s3midi --command DATA_REQUEST -x 3 0 0 -f"*"
+./s3midi -cDATA_REQUEST -x 3 0 0 -f"*"
 or
-./s3midi --command F_DREQ -f"EFFECT1" -p"A:\\SETUP\\"
+./s3midi -cF_DREQ -f"EFFECT1" -p"A:\\SETUP\\"
 
 # Dump EFFECT2 (filename argument ignored)
-./s3midi --command DATA_REQUEST -x 4 0 0 -f"*"
+./s3midi -cDATA_REQUEST -x 4 0 0 -f"*"
 or
-./s3midi --command F_DREQ -f"EFFECT2" -p"A:\\SETUP\\"
+./s3midi -cF_DREQ -f"EFFECT2" -p"A:\\SETUP\\"
 
 # Dump GENERAL (filename argument ignored)
-./s3midi --command DATA_REQUEST -x 5 0 0 -f"*"
+./s3midi -cDATA_REQUEST -x 5 0 0 -f"*"
 or
-./s3midi --command F_DREQ -f"GENERAL" -p"A:\\SETUP\\"
+./s3midi -cF_DREQ -f"GENERAL" -p"A:\\SETUP\\"
 
 # Dump Song 1 (Bank 0x30-0x39)
-./s3midi --command DATA_REQUEST -x 6 0x30 0x30 -f"*"
+./s3midi -cDATA_REQUEST -x 6 0x30 0x30 -f"*"
 or e.g.
-./s3midi --command F_DREQ -f"Song" -p"A:\\BANKS\\Bank 1    0\\"
+./s3midi -cF_DREQ -f"Song" -p"A:\\BANKS\\Bank 1    0\\"
 
 # Dump Performance (Bank 0x30-0x39 Perf 0x30-0x39)
-./s3midi --command DATA_REQUEST -x 7 0x30 0x30 '-f"*"
+./s3midi -cDATA_REQUEST -x 7 0x30 0x30 '-f"*"
 or e.g.
-./s3midi --command F_DREQ -f"Perf      0" -p"A:\\BANKS\\Bank 1    0\\PERF\\"
+./s3midi -cF_DREQ -f"Perf      0" -p"A:\\BANKS\\Bank 1    0\\PERF\\"
 
 # Dump hardcopy created with 'HARDCPY PRG'
-./s3midi --command F_DREQ -f"FIG_001 IMG" -p"A:\\DATA\\HARDCPY\\"
+./s3midi -cF_DREQ -f"FIG_001 IMG" -p"A:\\DATA\\HARDCPY\\"
+
+# Trigger RAM dump, takes ~20min (sends first STAT_REQUEST, then F_ACK)
+# if dump is not aborted, a reboot is necessary
+./s3midi -cRAM_DUMP
 ```
 
 ### File formats

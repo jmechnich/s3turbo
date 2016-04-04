@@ -5,17 +5,18 @@ from s3turbo.MessagePrinter import MessagePrinter
 from s3turbo.MSCEIMessage   import MSCEIMessage
 from s3turbo.S3Turbo        import S3FunctionName
 from s3turbo.Util           import checksum, conv7_8, noop, cancel, hexdump
-from s3turbo.Util           import convertToLong
+from s3turbo.Util           import convertToLong, getTimestamp
 
 class SysExParser(object):
     def __init__(self,send_conn,debug=False):
         super(SysExParser,self).__init__()
-        self.send_conn = send_conn
-        self.debug     = debug
-        self.dump_file = None
-        self.dump_on = False
-        self.printer = MessagePrinter(debug=self.debug)
-        self.handlers = {
+        self.send_conn  = send_conn
+        self.debug      = debug
+        self.dump_file  = None
+        self.dump_on    = False
+        self.dump_ram   = False
+        self.printer    = MessagePrinter(debug=self.debug)
+        self.handlers   = {
             # FILE FUNCTIONS  FILE_F
             "F_DHDR":      self.handleFileDumpHeader,
             "F_DPKT":      self.handleFileDumpDataBlock,
@@ -43,7 +44,7 @@ class SysExParser(object):
     def createDumpFile(self,filename=None):
         if not filename:
             timestamp = time.strftime("%Y%m%d%H%M%S")
-            filename="dump_%s.bin" % timestamp
+            filename="dump_%s.bin" % getTimestamp()
         self.dump_file = open(filename,"wb")
         
     def closeDumpFile(self):
@@ -57,10 +58,11 @@ class SysExParser(object):
         self.dump_size = size
         self.closeDumpFile()
         self.createDumpFile(filename)
-        print
+        print "Dumping '%s'" % filename
+        showsize = ' 0x%(index)06x' if self.dump_ram else ''
         self.bar = IncrementalBar(
-            "Dumping '%s'" % filename, max=size,
-            suffix = '%(percent)d%% [%(elapsed_td)s / %(eta_td)s]')
+            max=size,
+            suffix = '%(percent)d%% [%(elapsed_td)s / %(eta_td)s]' + showsize)
 
     def stopDump(self):
         if not self.dump_on: return
@@ -145,6 +147,13 @@ class SysExParser(object):
         if cc == cc_calc:
             self.sendSysEx( MSCEIMessage(fromName="D_ACK"),
                             timestamp=timestamp+2)
+            if self.dump_ram:
+                self.dump_on = True
+                self.startDump("ramdump_%s.bin" % getTimestamp(), 2097060)
+                time.sleep(0.1)
+                self.sendSysEx( MSCEIMessage(fromName="F_ACK"),
+                                timestamp=timestamp+3)
+                return True
         else:
             self.sendSysEx( MSCEIMessage(fromName="D_NACK"),
                             timestamp=timestamp+2)
@@ -212,9 +221,15 @@ class SysExParser(object):
         else:       print fname, [ hex(b) for b in msg ]
 
     def sendSysEx(self,msg,timestamp=0):
-        fname = S3FunctionName(msg.raw())
+        if msg.name:
+            fname = msg.name
+        else:
+            fname = S3FunctionName(msg.raw())
         if fname:
             if self.debug: print "Sending ", fname, "@", timestamp
             self.printer.handle(fname,msg)
-            if fname in self.dump_start: self.dump_on = True
+            if fname in self.dump_start:
+                self.dump_on = True
+            elif fname == 'RAM_DUMP':
+                self.dump_ram = True
         self.send_conn.send( (timestamp,msg.raw()))

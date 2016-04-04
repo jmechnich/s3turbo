@@ -117,17 +117,27 @@ def main():
                             midi.send_conn.send((0,currentHandler.parse(msg)))
                 else:
                     if not parser.parse(msg, timestamp): break
+            elif parser.dump_ram:
+                parser.stopDump()
+                break
             elif args.exit:
                 break
-        
     except EOFError, e:
         print "EOFError", e
         sys.exit(1)
     except KeyboardInterrupt:
+        if parser.dump_on:
+            parser.sendSysEx(MSCEIMessage(fromName="F_CANCEL"))
+            time.sleep(.1)
         print
     except S3Exception, e:
         print e
         sys.exit(1)
+
+    # give MIDI handler some time to finish sending data (produces MIDI
+    # timeouts if removed, e.g. on STAT_REQUEST)
+    # should be solved properly at some point...
+    time.sleep(.1)
     
 if __name__ == '__main__':
     main()

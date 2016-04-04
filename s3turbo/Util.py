@@ -153,3 +153,8 @@ def CharHandler(default):
 def ByteHandler(default): return ConversionHandler('<B',1,default)
 def WordHandler(default): return ConversionHandler('<H',2,default)
 def LongHandler(default): return ConversionHandler('<I',4,default)
+
+# create timestamp for dump files
+def getTimestamp():
+    from time import strftime
+    return strftime("%Y%m%d%H%M%S")
