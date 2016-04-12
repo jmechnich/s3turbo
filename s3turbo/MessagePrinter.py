@@ -1,5 +1,6 @@
-from s3turbo.Util import checksum, conv7_8, noop, convertToShort, convertToLong
-from s3turbo.Util import hexdump, timeToStr, dateToStr, prettyPath
+import struct
+from s3turbo.Util import checksum, conv7_8, noop
+from s3turbo.Util import hexdump, time2str, date2str, pretty_path
 
 class MessagePrinter(object):
     def __init__(self,debug=False):
@@ -61,9 +62,9 @@ class MessagePrinter(object):
             "iClass"       : data[0],
             "iSubClass"    : data[1],
             "iRelease"     : data[2],
-            "TotalMem"     : convertToLong(data[4:8]),
-            "FreeMem"      : convertToLong(data[8:12]),
-            "FreeSampleMem": convertToLong(data[12:16]),
+            "TotalMem"     : struct.unpack('>I',data[4:8]),
+            "FreeMem"      : struct.unpack('>I',data[8:12]),
+            "FreeSampleMem": struct.unpack('>I',data[12:16]),
             "ReadyFor"     : tuple(data[16:18]),
             "ActBankPerf"  : tuple(data[18:20]),
         }
@@ -89,13 +90,13 @@ class MessagePrinter(object):
         datadict = {
             "filename"           : str(bytearray(msg[5:16])),
             "flags"              : msg[16],
-            "info.Time"          : timeToStr(convertToShort(data[2:4])
-                                             if swapDateTime
-                                             else convertToShort(data[0:2])),
-            "info.Date"          : dateToStr(convertToShort(data[0:2])
-                                             if swapDateTime
-                                             else convertToShort(data[2:4])),
-            "info.Length"        : convertToLong(data[4:8]),
+            "info.Time"          : time2str(
+                struct.unpack('>H',data[2:4])
+                if swapDateTime else struct.unpack('>H',data[0:2])),
+            "info.Date"          : date2str(
+                struct.unpack('>H',data[0:2])
+                if swapDateTime else struct.unpack('>H',data[2:4])),
+            "info.Length"        : struct.unpack('>I',data[4:8]),
             "info.DeviceClass"   : data[8],
             "info.DeviceSubClass": data[9],
             "info.DeviceRelease" : data[10],
@@ -124,7 +125,7 @@ class MessagePrinter(object):
                      datadict["info.DeviceClass"],
                      datadict["info.DeviceSubClass"],
                      datadict["info.DeviceRelease"],
-                     repr(prettyPath(datadict["location"])))
+                     repr(pretty_path(datadict["location"])))
         else:
             print "  Data:"
             for k,v in sorted(datadict.iteritems()):
@@ -168,9 +169,9 @@ class MessagePrinter(object):
             "filename1"     : repr(str(bytearray(msg[8:19]))),
             "fileflags"     : msg[19],
             "datastr"       : hexdump(data),
-            "info.Time"     : convertToShort(data[0:2]),
-            "info.Date"     : convertToShort(data[2:4]),
-            "info.Length"   : convertToLong(data[4:8]),
+            "info.Time"     : struct.unpack('>H',data[0:2]),
+            "info.Date"     : struct.unpack('>H',data[2:4]),
+            "info.Length"   : struct.unpack('>I',data[4:8]),
             "info.InstrID"  : data[8],
             "info.FileID"   : data[9],
             "filename2"     : repr(str(bytearray(msg[offset:offset+11]))),

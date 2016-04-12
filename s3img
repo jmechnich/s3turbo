@@ -63,6 +63,10 @@ def write(args):
         else:
             sr.set_voldate()
             sr.set_voltime()
+        if args.add:
+            sr.add_directory(args.add)
+        if args.oemname:
+            sr.set_oemname(args.oemname)
         sr.write_to_file(args.output_file)
     except Exception, e:
         if args.backtrace:
@@ -113,12 +117,16 @@ def main():
     writeparser.add_argument('output_file', type=str, help='output file')
     writeparser.add_argument('--compatible', action='store_true',
                              help='treat some errors as warnings')
+    writeparser.add_argument('-a', '--add', metavar='DIR', type=str,
+                             help='add DIR to image')
     writeparser.add_argument('-b', '--backtrace', action='store_true',
                              help='print backtrace instead of error message')
-    writeparser.add_argument('-n', '--name', type=str,
-                             help='set volume name')
     writeparser.add_argument('-f', '--file', type=str,
                              help='read input file')
+    writeparser.add_argument('-n', '--name', type=str,
+                             help='set volume name')
+    writeparser.add_argument('-o', '--oemname', type=eval,
+                             help='set oem name')
     writeparser.add_argument('-v', '--verbose', action='store_true',
                              help='print debugging information')
     writeparser.set_defaults(func=write)

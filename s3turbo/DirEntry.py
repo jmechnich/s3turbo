@@ -1,23 +1,22 @@
 from __future__ import print_function
 import cStringIO, sys, collections
 from s3turbo.Util import CharHandler, ByteHandler, WordHandler, LongHandler
-from s3turbo.Util import decodePath
+from s3turbo.Util import decode_path
 
 class DirEntry(object):
     def __init__(self,**kwargs):
         if 'data' in kwargs.keys():
             self.from_raw(kwargs['data'])
         else:
-            self.reset()
-        for k,v in kwargs.iteritems():
-            if k == 'data': continue
-            self.__setattr__(k,v)
+            for name,handler in DirEntry.attributes.iteritems():
+                self.__setattr__(name,kwargs.get(name,handler.default))
 
     def reset(self):
         for name,handler in DirEntry.attributes.iteritems():
             self.__setattr__(name,handler.default)
         
     def from_raw(self,data):
+        if isinstance(data,str): data = cStringIO.StringIO(data)
         for name,handler in DirEntry.attributes.iteritems():
             try:
                 self.__setattr__(name,handler.read(data))
@@ -57,7 +56,7 @@ class DirEntry(object):
         self.shortext  = name[8:]
 
     def decodedName(self):
-        return decodePath(self.name())
+        return decode_path(self.name())
 
     def dump(self,file=sys.stdout):
         for name in DirEntry.attributes.iterkeys():

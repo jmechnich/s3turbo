@@ -1,11 +1,11 @@
-import time
+import time, struct
 from progress.bar import IncrementalBar
 
 from s3turbo.MessagePrinter import MessagePrinter
 from s3turbo.MSCEIMessage   import MSCEIMessage
 from s3turbo.S3Turbo        import S3FunctionName
 from s3turbo.Util           import checksum, conv7_8, noop, cancel, hexdump
-from s3turbo.Util           import convertToLong, getTimestamp
+from s3turbo.Util           import timestamp
 
 class SysExParser(object):
     def __init__(self,send_conn,debug=False):
@@ -44,7 +44,7 @@ class SysExParser(object):
     def createDumpFile(self,filename=None):
         if not filename:
             timestamp = time.strftime("%Y%m%d%H%M%S")
-            filename="dump_%s.bin" % getTimestamp()
+            filename="dump_%s.bin" % timestamp()
         self.dump_file = open(filename,"wb")
         
     def closeDumpFile(self):
@@ -109,7 +109,7 @@ class SysExParser(object):
         cc_calc = checksum(msg[1:offset])
         if cc == cc_calc:
             filename = str(bytearray(msg[5:16])).strip()
-            length = convertToLong(data[4:8])
+            length = struct.unpack('>I',data[4:8])
             self.startDump(filename,length)
             self.dump(data[8:])
             self.sendSysEx( MSCEIMessage(fromName="F_ACK"),
@@ -149,7 +149,7 @@ class SysExParser(object):
                             timestamp=timestamp+2)
             if self.dump_ram:
                 self.dump_on = True
-                self.startDump("ramdump_%s.bin" % getTimestamp(), 2097060)
+                self.startDump("ramdump_%s.bin" % timestamp(), 2097060)
                 time.sleep(0.1)
                 self.sendSysEx( MSCEIMessage(fromName="F_ACK"),
                                 timestamp=timestamp+3)
@@ -191,7 +191,7 @@ class SysExParser(object):
         cc_calc = checksum(msg[1:offset])
         if cc == cc_calc:
             filename = str(bytearray(msg[8:19])).strip()
-            length = convertToLong(data[4:8])
+            length = struct.unpack('>I',data[4:8])
             self.startDump(filename,length)
             #time.sleep(0.1)
             self.sendSysEx( MSCEIMessage(fromName="D_ACK"),

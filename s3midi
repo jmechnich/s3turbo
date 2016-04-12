@@ -8,7 +8,7 @@ from s3turbo.MSCEIMessage import MSCEIMessage
 from s3turbo.SampleDumpHandler import SampleDumpHandler
 from s3turbo.StandardHandler import StandardHandler
 from s3turbo.S3Turbo import S3Exception
-from s3turbo.Util import isSysEx, str2file, str2hex
+from s3turbo.Util import is_sysex, str2file, str2hex
 
 def main():
     # command-line parsing
@@ -81,7 +81,7 @@ def main():
         parser = SysExParser(send_conn=midi.send_conn,debug=args.verbose)
         if args.command:
             parser.sendSysEx(MSCEIMessage(*payload, fromName=args.command))
-        elif len(args.args):
+        elif len(payload):
             midi.send_conn.send( (0,payload))
 
         standard_handler = StandardHandler(debug=args.verbose)
@@ -93,7 +93,7 @@ def main():
                 timestamp, msg = midi.recv_conn.recv()
                 if not len(msg):
                     continue
-                if not isSysEx(msg):
+                if not is_sysex(msg):
                     if not standard_handler.handle(msg,timestamp): break
                     else: continue
                 if msg[1] == 0x7E:

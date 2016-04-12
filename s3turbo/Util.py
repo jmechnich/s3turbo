@@ -17,18 +17,6 @@ def conv7_8(src):
         bit8 = bit8 >> 1
     return ret
 
-# convert pair of 8-bit values to 16-bit int, MSB first
-def convertToShort(data):
-    if len(data) < 2:
-        return None
-    return data[0] << 8 | data[1]
-
-# convert four 8-bit values to 32-bit int, MSB first
-def convertToLong(data):
-    if len(data) < 4:
-        return None
-    return data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3]
-
 # xor checksum of list
 def checksum(data):
     ret = 0
@@ -79,27 +67,27 @@ def writeWAV(filename,samplerate,data):
     f.close()
 
 # checks first and last byte in list for SysEx magic
-def isSysEx(msg):
+def is_sysex(msg):
     if not msg or not len(msg):
         return False
     return msg[0] == 0xF0 and msg[-1] == 0xF7
 
 # converts S3 time integer to string
-def timeToStr(short):
+def time2str(short):
     s=(short&0x1f)<<1
     m=(short>>5)&0x3f
     h=(short>>11)&0x1f
     return "%02d:%02d:%02d" % (h,m,s)
 
 # converts string to S3 time integer
-def strToTime(s):
+def str2time(s):
     h = int(s[0:2])
     m = int(s[3:5])
     s = int(s[6:8])>>1
     return (h << 11) | (m << 5) | s
 
 # converts S3 date integer to string
-def dateToStr(short):
+def date2str(short):
     d=(short&0x1f)
     m=(short>>5)&0xf
     y=((short>>9)&0x7f)+1980
@@ -107,30 +95,36 @@ def dateToStr(short):
     return "%02d/%02d/%04d" % (d,m,y)
 
 # converts string to S3 date integer
-def strToDate(s):
+def str2date(s):
     d = int(s[0:2])
     m = int(s[3:5])
     y = int(s[6:10])-1980
     return (y << 9) | (m << 5) | d
 
 # strips elements of path from whitespace
-def prettyPath(s):
+def pretty_path(s):
     return '\\'.join([i.strip() for i in s.split('\\')])
 
 # decode path from latin1 and replace invalid characters
-def decodePath(s):
+def decode_path(s):
     return s.decode('latin1').replace('/','@')
 
 # encode path to latin1 etc
-def encodePath(s):
+def encode_path(s):
     return s.replace('@','/').decode('utf-8').encode('latin1')
 
-def makeTimes(d,t):
+def time_conv_to_local(d,t):
     import time, calendar
-    ds = dateToStr(d)
-    ts = timeToStr(t)
+    ds = date2str(d)
+    ts = time2str(t)
     t = time.mktime(time.strptime("%s %s" % (ds,ts),"%d/%m/%Y %H:%M:%S"))
     return (t,t)
+
+def time_conv_from_local(ft):
+    import time
+    st = time.localtime(ft)
+    return (str2date(time.strftime("%d/%m/%Y",st)),
+            str2time(time.strftime("%H:%M:%S",st)))
 
 class ConversionHandler(object):
     def __init__(self,format,length,default=None):
@@ -140,7 +134,7 @@ class ConversionHandler(object):
 
     def read(self,data):
         import struct
-        if type(data) == type(str()): s = data
+        if isinstance(data,str): s = data
         else: s = data.read(self.length)
         return struct.unpack(self.format,s)[0]
     
@@ -155,6 +149,6 @@ def WordHandler(default): return ConversionHandler('<H',2,default)
 def LongHandler(default): return ConversionHandler('<I',4,default)
 
 # create timestamp for dump files
-def getTimestamp():
+def timestamp():
     from time import strftime
     return strftime("%Y%m%d%H%M%S")
