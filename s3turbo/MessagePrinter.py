@@ -1,5 +1,5 @@
 import struct
-from s3turbo.Util import checksum, conv7_8, noop
+from s3turbo.Util import checksum, conv7_8, noop, list2str
 from s3turbo.Util import hexdump, time2str, date2str, pretty_path
 
 class MessagePrinter(object):
@@ -62,9 +62,9 @@ class MessagePrinter(object):
             "iClass"       : data[0],
             "iSubClass"    : data[1],
             "iRelease"     : data[2],
-            "TotalMem"     : struct.unpack('>I',data[4:8]),
-            "FreeMem"      : struct.unpack('>I',data[8:12]),
-            "FreeSampleMem": struct.unpack('>I',data[12:16]),
+            "TotalMem"     : struct.unpack('>I',list2str(data[4:8]))[0],
+            "FreeMem"      : struct.unpack('>I',list2str(data[8:12]))[0],
+            "FreeSampleMem": struct.unpack('>I',list2str(data[12:16]))[0],
             "ReadyFor"     : tuple(data[16:18]),
             "ActBankPerf"  : tuple(data[18:20]),
         }
@@ -87,16 +87,14 @@ class MessagePrinter(object):
             location += chr(msg[offset])
             offset += 1
         offset+=1
+        timestr = list2str(data[2:4]) if swapDateTime else list2str(data[0:2])
+        datestr = list2str(data[0:2]) if swapDateTime else list2str(data[2:4])
         datadict = {
             "filename"           : str(bytearray(msg[5:16])),
             "flags"              : msg[16],
-            "info.Time"          : time2str(
-                struct.unpack('>H',data[2:4])
-                if swapDateTime else struct.unpack('>H',data[0:2])),
-            "info.Date"          : date2str(
-                struct.unpack('>H',data[0:2])
-                if swapDateTime else struct.unpack('>H',data[2:4])),
-            "info.Length"        : struct.unpack('>I',data[4:8]),
+            "info.Time"          : time2str(struct.unpack('>H',timestr)[0]),
+            "info.Date"          : date2str(struct.unpack('>H',datestr)[0]),
+            "info.Length"        : struct.unpack('>I',list2str(data[4:8]))[0],
             "info.DeviceClass"   : data[8],
             "info.DeviceSubClass": data[9],
             "info.DeviceRelease" : data[10],
@@ -169,9 +167,9 @@ class MessagePrinter(object):
             "filename1"     : repr(str(bytearray(msg[8:19]))),
             "fileflags"     : msg[19],
             "datastr"       : hexdump(data),
-            "info.Time"     : struct.unpack('>H',data[0:2]),
-            "info.Date"     : struct.unpack('>H',data[2:4]),
-            "info.Length"   : struct.unpack('>I',data[4:8]),
+            "info.Time"     : struct.unpack('>H',list2str(data[0:2]))[0],
+            "info.Date"     : struct.unpack('>H',list2str(data[2:4]))[0],
+            "info.Length"   : struct.unpack('>I',list2str(data[4:8]))[0],
             "info.InstrID"  : data[8],
             "info.FileID"   : data[9],
             "filename2"     : repr(str(bytearray(msg[offset:offset+11]))),
