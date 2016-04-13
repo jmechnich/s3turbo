@@ -1,7 +1,7 @@
 from __future__ import print_function
-import cStringIO, sys, collections
+import cStringIO, sys, collections, re
 from s3turbo.Util import CharHandler, ByteHandler, WordHandler, LongHandler
-from s3turbo.Util import decode_path
+from s3turbo.Util import decode_path, encode_path
 
 class DirEntry(object):
     def __init__(self,**kwargs):
@@ -55,8 +55,22 @@ class DirEntry(object):
         self.shortname = name[:8]
         self.shortext  = name[8:]
 
-    def decodedName(self):
-        return decode_path(self.name())
+    def decoded_name(self):
+        if not self.has_attr(DirEntry.ATTR_DIR) and \
+           self.shortext in DirEntry.known_extensions:
+            return "%s.%s" % (decode_path(self.shortname).strip(),
+                              decode_path(self.shortext).strip())
+        return decode_path(self.name()).strip()
+
+    def encode_name(self,name):
+        if not self.has_attr(DirEntry.ATTR_DIR):
+            mo = re.match(r'^(.*)\.(\w{3})$',name)
+            if mo:
+                n,e = mo.groups()
+                self.shortname = encode_path(n[:8].ljust(8))
+                self.shortext  = encode_path(e)
+        else:
+            self.set_name(encode_path(name))
 
     def dump(self,file=sys.stdout):
         for name in DirEntry.attributes.iterkeys():
@@ -77,6 +91,10 @@ DirEntry.attributes = collections.OrderedDict([
     ('start',     WordHandler(0)),
     ('size',      LongHandler(0)),
 ])
+
+DirEntry.known_extensions = [
+    'TXL', 'LOD', 'PRG',
+]
 
 DirEntry.SIZE = 32
 

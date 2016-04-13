@@ -190,7 +190,7 @@ class S3Image(object):
         self.bs.oemname = oemname
         
     def dump_direntry(self,de,indent=0):
-        name = de.decodedName().strip()
+        name = de.decoded_name()
         if de.is_dir(): name = '[%s]' % name
         print('%s%-14s %8d %s %s  %2x %7d (0x%x)' % (
             indent*' ', name, de.size, time2str(de.mtime), date2str(de.mdate),
@@ -230,7 +230,7 @@ class S3Image(object):
         for d in dirs:
             if d.is_dotdir(): continue
             self.dump_contents(
-                start=d.start, path=path+"\\"+d.decodedName().strip(),
+                start=d.start, path=path+"\\"+d.decoded_name(),
                 header=False)
         
     def dump_props(self):
@@ -252,7 +252,7 @@ class S3Image(object):
         dirs, _ = self.read_dir(start,no_dotdirs=True)
         dirname = path.split('\\')[-1]
         for de in dirs:
-            if de.name().strip() == dirname:
+            if de.decoded_name() == dirname:
                 if kwargs.get('errOnExist',False):
                     raise S3Exception("directory already exists")
                 else: return
@@ -264,7 +264,7 @@ class S3Image(object):
         while len(segments) > 1:
             dirs, _ = self.read_dir(start,no_dotdirs=True)
             for de in dirs:
-                if de.name().strip() == segments[0]:
+                if de.decoded_name() == segments[0]:
                     segments = segments[1:]
                     start    = de.start
                     break
@@ -283,7 +283,7 @@ class S3Image(object):
         kwargs.setdefault('mdate',str2date(time.strftime("%d/%m/%Y")))
         kwargs.setdefault('mtime',str2time(time.strftime("%H:%M:%S")))
         de = DirEntry(**kwargs)
-        de.set_name(name)
+        de.encode_name(name)
         self.add_direntry(cluster,de)
         de.set_name('.')
         self.clusterdata[newstart] = de.to_raw()
@@ -298,7 +298,7 @@ class S3Image(object):
         dirs, _ = self.read_dir(start,no_dotdirs=True)
         filename = path.split('\\')[-1]
         for de in dirs:
-            if de.name().strip() == filename:
+            if de.decoded_name() == filename:
                 if kwargs.get('errOnExist',True):
                     raise S3Exception("file already exists")
                 else: return
@@ -313,7 +313,7 @@ class S3Image(object):
         kwargs.setdefault('mdate',str2date(time.strftime("%d/%m/%Y")))
         kwargs.setdefault('mtime',str2time(time.strftime("%H:%M:%S")))
         de = DirEntry(**kwargs)
-        de.set_name(name)
+        de.encode_name(name)
         self.add_direntry(cluster,de)
         for i,c in enumerate(chain):
             self.clusterdata[c] = data[i*self.bs.cluster_size():
@@ -377,16 +377,14 @@ class S3Image(object):
             dirs, files = self.read_dir(dircluster)
             if len(segments) > 1:
                 for d in dirs:
-                    dirname = (d.shortname+d.shortext).strip()
-                    if dirname == segments[0]:
+                    if d.decoded_name() == segments[0]:
                         segments = segments[1:]
                         dircluster = d.start
                         break
                 else: return None
             else:
                 for f in files:
-                    filename = (f.shortname+f.shortext).strip()
-                    if filename == segments[0]:
+                    if f.decoded_name() == segments[0]:
                         return f
                 else: return None
         
@@ -403,14 +401,11 @@ class S3Image(object):
             else:                 raise S3Exception(s)
         return buf[:f.size]
 
-    def extract_all(self,targetdir,cluster=0,compatibilityMode=False):
+    def extract_all(self,targetdir,start=0,compatibilityMode=False):
         if not os.path.exists(targetdir): os.makedirs(targetdir)
-        if cluster == 0:
-            os.utime(targetdir,
-                     time_conv_to_local(self.get_voldate(),self.get_voltime()))
-        dirs, files = self.read_dir(cluster)
+        dirs, files = self.read_dir(start)
         for f in files:
-            fname = f.decodedName().strip()
+            fname = f.decoded_name()
             outname = os.path.join(targetdir,fname)
             try:
                 with open(outname,'wb') as outfile:
@@ -424,12 +419,15 @@ class S3Image(object):
                 if compatibilityMode: print("WARNING: "+s)
                 else:                 raise S3Exception(s)
         for d in dirs:
-            dirname = d.decodedName().strip()
+            dirname = d.decoded_name()
             if dirname == '.':
                 os.utime(targetdir, time_conv_to_local(d.mdate,d.mtime))
                 continue
             elif dirname == '..': continue
-            self.extract_all(os.path.join(targetdir,dirname),cluster=d.start)
+            self.extract_all(os.path.join(targetdir,dirname),start=d.start)
+        if start == 0:
+            os.utime(targetdir,
+                     time_conv_to_local(self.get_voldate(),self.get_voltime()))
 
     def add_directory(self,path):
         cut = len(path)
@@ -438,12 +436,14 @@ class S3Image(object):
         self.set_voltime(mtime)
         for root, dirs, files in os.walk(path):
             newroot = root[cut:].replace('/','\\')
-            for orig,dn in [ (d,newroot + '\\' + d) for d in reversed(dirs) ]:
+            for orig,dn in [ (d,newroot + '\\' + d)
+                             for d in sorted(dirs,reverse=True) ]:
                 path  = os.path.join(root,orig)
                 mdate, mtime = time_conv_from_local(os.path.getmtime(path))
                 if self.debug: print("Adding dir  '%s'" % dn)
                 self.mkdir(encode_path(dn),mdate=mdate,mtime=mtime)
-            for orig,fn in [ (f,newroot + '\\' + f) for f in reversed(files) ]:
+            for orig,fn in [ (f,newroot + '\\' + f)
+                             for f in sorted(files,reverse=True) ]:
                 path = os.path.join(root,orig)
                 mdate, mtime = time_conv_from_local(os.path.getmtime(path))
                 with open(path,'rb') as f:
