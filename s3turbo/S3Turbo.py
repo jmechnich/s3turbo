@@ -26,12 +26,12 @@ S3Functions = OrderedDict([
     ("UNPREPARE_generalAccess", (0x5, 0x0A, False)), # UNPREPARE GENERAL ACCESS
     ("PREPARE_StyleAccess"    , (0x5, 0x18, False)), # PREPARE STYLE ACCESS
     ("UNPREPARE_StyleAccess"  , (0x5, 0x19, False)), # UNPREPARE STYLE ACCESS
+    ("DATA_REQUEST"           , (0x5, 0x0B, True)),  # DATA_REQUEST
     ("DATA_HEADER"            , (0x5, 0x0C, True)),  # DATA DUMP HEADER
     ("DATA_DUMP"              , (0x5, 0x0D, True)),  # DATA DUMP
     ("DELETE"                 , (0x5, 0x0E, True)),  # DELETE
     ("DIR_REQUEST"            , (0x5, 0x0F, True)),  # DIRECTORY REQUEST
     ("DIR_ANSWER"             , (0x5, 0x10, True)),  # DIRECTORY ANSWER
-    ("DATA_REQUEST"           , (0x5, 0x0B, True)),  # DATA_REQUEST
     ("MESSAGECAPTUREON"       , (0x5, 0x11, False)), # MESSAGE CAPTURE ON
     ("MESSAGECAPTUREOFF"      , (0x5, 0x12, False)), # MESSAGE CAPTURE OFF
     ("MESSAGESEND"            , (0x5, 0x13, True)),  # MESSAGE SEND
