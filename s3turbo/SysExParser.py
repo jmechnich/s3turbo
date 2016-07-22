@@ -8,9 +8,9 @@ from s3turbo.Util           import checksum, conv7_8, noop, cancel, hexdump
 from s3turbo.Util           import mktimestamp, list2str
 
 class SysExParser(object):
-    def __init__(self,send_conn,debug=False):
+    def __init__(self,send_func,debug=False):
         super(SysExParser,self).__init__()
-        self.send_conn  = send_conn
+        self.send_func  = send_func
         self.debug      = debug
         self.dump_file  = None
         self.dump_on    = False
@@ -211,6 +211,7 @@ class SysExParser(object):
         fname = S3FunctionName(msg)
         if not fname:
             print "Unhandled message"
+            print msg
             return acceptUnhandled
         
         if self.debug: print "Received", fname, "@", timestamp
@@ -232,4 +233,4 @@ class SysExParser(object):
                 self.dump_on = True
             elif fname == 'RAM_DUMP':
                 self.dump_ram = True
-        self.send_conn.send( (timestamp,msg.raw()))
+        self.send_func( (timestamp,msg.raw()))
