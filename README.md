@@ -4,6 +4,52 @@ Tools for the General Music S2/S3 Turbo synthesizer, including
 * `s3img`, a program for handling floppy disk images
 * `s3floppy`, a program for formatting, reading and writing S2/S3 floppy disks
 
+## Installation
+s3turbo uses python which should be available by default on modern Linux systems and Mac OS X.  The `s3midi` script depends on additional python packages that might have to be installed manually.  These are:
+* `python-rtmidi` RtMidi wrapper for Python
+* `python-progress` Progress bar for Python
+
+### Linux
+
+On Debian, `python-rtmidi` is not available from the standard repositories, it can be installed with `pip`:
+```
+sudo pip install python-rtmidi
+```
+`python-progress` can be installed using `apt`:
+```
+sudo apt-get install python-progress
+```
+
+### Mac OS X
+Python packages can be installed using `pip`. If `pip` is not installed already, use
+```
+sudo easy_install pip
+```
+to get it.
+
+If `easy_install` is missing as well, it can be installed with
+```
+curl https://bootstrap.pypa.io/ez_setup.py -o - | sudo python
+```
+
+Install the `s3midi` dependencies with
+```
+sudo pip install python-rtmidi
+sudo pip install progress
+```
+
+### Running from source
+
+```
+# Get the code from Github (https://github.com/jmechnich/s3turbo)
+git clone https://github.com/jmechnich/s3turbo # or download ZIP file
+cd s3turbo
+# Install software globally (optional)
+sudo python setup.py install
+# e.g. list available MIDI devices
+./s3midi -l
+```
+
 ## About s3midi
 The General Music/GEM S2/S3 Turbo Music Processor is a synthesizer workstation from the early 90s.  The Turbo version (larger ROM and updated functionality) has support for MIDI System Exclusive which is not well-documented.  The manual includes only a rudimentary description of the available commands and data structures but the C development files are not available.
 
@@ -236,7 +282,3 @@ The S2/S3 exports 14-bit encoded mono samples. When receiving a sample dump, the
 * sample_TIMESTAMP.txt: sample information (loops, samplerate, etc)
 * sample_TIMESTAMP.dmp: sample data dump (7-in-8-bit chunks, big-endian: .dcba987 .6543210)
 * sample_TIMESTAMP.wav: PCM sample data (s16le mono)
-
-## Dependencies
-* `python-pypm` Portmidi wrapper for Python
-* `python-progress` Progress bar for Python

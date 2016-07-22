@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-import argparse, os, sys, time
+import argparse, os, sys, time, atexit
 
-from s3turbo.MidiHandler import MidiHandler
+#from s3turbo.MidiHandler import MidiHandler as MidiHandler
+from s3turbo.RtMidiHandler import RtMidiHandler as MidiHandler
+
 from s3turbo.SysExParser import SysExParser
 from s3turbo.MSCEIMessage import MSCEIMessage
 from s3turbo.SampleDumpHandler import SampleDumpHandler
@@ -60,37 +62,38 @@ def main():
             else:
                 payload.append(i)
     
+    midi = MidiHandler()
+    atexit.register(midi.stop)
     try:
         # list MIDI devices and exit
         if args.listdev:
             print "Inputs:"
-            MidiHandler.print_dev(MidiHandler.INPUT)
+            midi.print_dev(MidiHandler.INPUT)
             print "Outputs:"
-            MidiHandler.print_dev(MidiHandler.OUTPUT)
+            midi.print_dev(MidiHandler.OUTPUT)
             sys.exit(0)
             
         # MidiHandler, filter clock messages
         filter = [
            [ 0xf8 ], # midi clock
         ]
-        midi = MidiHandler(indev=args.indev, outdev=args.outdev,
-                           msgfilter=filter, debug=args.verbose)
-        midi.start()
+        midi.initialize(indev=args.indev, outdev=args.outdev,
+                        msgfilter=filter, debug=args.verbose)
 
         # SysExParser
-        parser = SysExParser(send_conn=midi.send_conn,debug=args.verbose)
+        parser = SysExParser(send_func=midi.send,debug=args.verbose)
         if args.command:
             parser.sendSysEx(MSCEIMessage(*payload, fromName=args.command))
         elif len(payload):
-            midi.send_conn.send( (0,payload))
+            midi.send( (0,payload))
 
         standard_handler = StandardHandler(debug=args.verbose)
 
         # poll for incoming messages
         currentHandler = None
         while True:
-            if midi.recv_conn.poll(1):
-                timestamp, msg = midi.recv_conn.recv()
+            if midi.poll(1):
+                timestamp, msg = midi.recv()
                 if not len(msg):
                     continue
                 if not is_sysex(msg):
@@ -102,7 +105,7 @@ def main():
                         if not currentHandler:
                             currentHandler = SampleDumpHandler(
                                 debug=args.verbose,samplelist=args.samples)
-                        midi.send_conn.send((0,currentHandler.parse(msg)))
+                        midi.send((0,currentHandler.parse(msg)))
                     # WAIT
                     elif msg[3] == 0x7C:
                         pass
@@ -114,7 +117,7 @@ def main():
                     # ACK
                     elif msg[3] == 0x7F:
                         if currentHandler:
-                            midi.send_conn.send((0,currentHandler.parse(msg)))
+                            midi.send((0,currentHandler.parse(msg)))
                 else:
                     if not parser.parse(msg, timestamp): break
             elif parser.dump_ram:
@@ -124,20 +127,15 @@ def main():
                 break
     except EOFError, e:
         print "EOFError", e
+        raise
         sys.exit(1)
     except KeyboardInterrupt:
         if parser.dump_on:
             parser.sendSysEx(MSCEIMessage(fromName="F_CANCEL"))
-            time.sleep(.1)
         print
     except S3Exception, e:
         print e
         sys.exit(1)
-
-    # give MIDI handler some time to finish sending data (produces MIDI
-    # timeouts if removed, e.g. on STAT_REQUEST)
-    # should be solved properly at some point...
-    time.sleep(.1)
     
 if __name__ == '__main__':
     main()

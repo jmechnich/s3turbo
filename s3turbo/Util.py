@@ -154,4 +154,6 @@ def mktimestamp():
     return strftime("%Y%m%d%H%M%S")
 
 def list2str(l):
-    return ''.join([chr(li) for li in l ])
+    try:
+        return ''.join([chr(li) for li in l ])
+    except: return 'error'
