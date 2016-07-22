@@ -5,32 +5,37 @@ class MidiHandler(object):
     INPUT=0
     OUTPUT=1
     
-    def __init__(self, indev=-1, outdev=-1, latency=10, msgfilter=[],
-                 debug=False):
+    def __init__(self):
         super(MidiHandler,self).__init__()
+        self.procs   = []
+        pypm.Initialize()
+        
+    def __del__(self):
+        self.stop()
+        pypm.Terminate()
+
+    def initialize(self, indev=-1, outdev=-1, latency=10, msgfilter=[],
+                   debug=False):
         self.indev     = indev
         self.outdev    = outdev
         self.latency   = latency
         self.msgfilter = msgfilter
         self.debug     = debug
         
-        pypm.Initialize()
         self.initInput()
         self.initOutput()
-        
-    def __del__(self):
-        self.stop()
-        pypm.Terminate()
-        
+
     def initInput(self):
         if self.indev < 0:
             self.print_dev(self.INPUT)
             self.indev = int(raw_input("Type input number: "))
         self.recv_conn, recv_conn = Pipe()
         self.recv_proc = Process(
-            target=MidiHandler.recv,
+            target=MidiHandler.recv_real,
             args=(recv_conn,self.indev,self.msgfilter,self.debug)
         )
+        self.recv_proc.start()
+        self.procs.append((self.recv_proc,self.recv_conn))
 
     def initOutput(self):
         if self.outdev < 0:
@@ -38,24 +43,29 @@ class MidiHandler(object):
             self.outdev = int(raw_input("Type output number: "))
         self.send_conn, send_conn = Pipe()
         self.send_proc = Process(
-            target=MidiHandler.send,
+            target=MidiHandler.send_real,
             args=(send_conn,self.outdev,self.latency,self.debug)
         )
-
-    def start(self):
-        self.recv_proc.start()
         self.send_proc.start()
+        self.procs.append((self.send_proc,self.send_conn))
 
     def stop(self):
-        if self.recv_proc.is_alive():
-            self.recv_conn.send((-1,[]))
-            self.recv_proc.join()
-        if self.send_proc.is_alive():
-            self.send_conn.send((-1,[]))
-            self.send_proc.join()
+        for proc, conn in self.procs:
+            if proc.is_alive():
+                conn.send((-1,[]))
+                proc.join()
+
+    def send(self, payload):
+        self.send_conn.send(payload)
+
+    def poll(self, timeout):
+        return self.recv_conn.poll(timeout)
+
+    def recv(self):
+        return self.recv_conn.recv()
 
     @staticmethod
-    def send(send_conn, outdev, latency, debug=False):
+    def send_real(send_conn, outdev, latency, debug=False):
         signal.signal(signal.SIGINT,signal.SIG_IGN)
         MidiOut = pypm.Output(outdev, latency)
         while True:
@@ -77,11 +87,10 @@ class MidiHandler(object):
             else:
                 print "Trying to send non-sysex message"
                 pass
-        #time.sleep(0.1)
         del MidiOut
         
     @staticmethod
-    def recv(recv_conn, indev, msgfilter=[], debug=False):
+    def recv_real(recv_conn, indev, msgfilter=[], debug=False):
         signal.signal(signal.SIGINT,signal.SIG_IGN)
         MidiIn = pypm.Input(indev)
         # does not seem to work, leave at default (FILT_ACTIVE)
@@ -131,11 +140,9 @@ class MidiHandler(object):
                         sysex_timestamp = None
                 else:
                     recv_conn.send( (timestamp, msg[0]))
-        #time.sleep(0.1)
         del MidiIn
                     
-    @staticmethod
-    def print_dev(InOrOut):
+    def print_dev(self,InOrOut):
         for loop in range(pypm.CountDevices()):
             interf,name,inp,outp,opened = pypm.GetDeviceInfo(loop)
             if ((InOrOut == MidiHandler.INPUT) & (inp == 1) |
