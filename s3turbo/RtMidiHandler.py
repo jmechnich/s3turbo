@@ -84,16 +84,10 @@ class RtMidiHandler(object):
                 return
             
         if msgtype == 0xF0:
-            if self.debug:
-                print "SysEx start"
             self.sysex = msg
-        elif not self.sysex is None:
-            if self.debug:
-                print "SysEx continue"
+        elif len(self.sysex):
             self.sysex += msg
         else:
-            if self.debug:
-                print "Non-SysEx"
             recv_conn.send( (0, msg))
 
         if 0xF7 in self.sysex:
