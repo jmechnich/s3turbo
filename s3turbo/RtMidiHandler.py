@@ -26,6 +26,9 @@ class RtMidiHandler(object):
         
         self.initInput()
         self.initOutput()
+
+    def stop(self):
+        pass
         
     def initInput(self):
         if self.indev < 0:

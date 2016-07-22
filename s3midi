@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-import argparse, os, sys, time
+import argparse, os, sys, time, atexit
 
+#from s3turbo.MidiHandler import MidiHandler as MidiHandler
 from s3turbo.RtMidiHandler import RtMidiHandler as MidiHandler
+
 from s3turbo.SysExParser import SysExParser
 from s3turbo.MSCEIMessage import MSCEIMessage
 from s3turbo.SampleDumpHandler import SampleDumpHandler
@@ -60,8 +62,9 @@ def main():
             else:
                 payload.append(i)
     
+    midi = MidiHandler()
+    atexit.register(midi.stop)
     try:
-        midi = MidiHandler()
         # list MIDI devices and exit
         if args.listdev:
             print "Inputs:"
@@ -129,16 +132,10 @@ def main():
     except KeyboardInterrupt:
         if parser.dump_on:
             parser.sendSysEx(MSCEIMessage(fromName="F_CANCEL"))
-            time.sleep(.1)
         print
     except S3Exception, e:
         print e
         sys.exit(1)
-
-    # give MIDI handler some time to finish sending data (produces MIDI
-    # timeouts if removed, e.g. on STAT_REQUEST)
-    # should be solved properly at some point...
-    time.sleep(.1)
     
 if __name__ == '__main__':
     main()
